@@ -12,6 +12,16 @@ class MainViewController: UITableViewController {
         setupFABButton()
         
         loadCurrencies()
+        
+        APIService.shared.fetchAllRates { result in
+            switch result {
+            case .success(let response):
+                print("Success! Base currencyL \(response.base)")
+                print("Exchange rates: \(response.rates)")
+            case .failure(let error):
+                print("API ERROR: \(error)")
+            }
+        }
     }
         
     private func setupViewController() {
@@ -34,7 +44,7 @@ class MainViewController: UITableViewController {
     
     private func setupFABButton() {
         fabButton = UIButton(type: .system)
-        fabButton.backgroundColor = .systemBlue
+        fabButton.backgroundColor = .systemGreen
         fabButton.tintColor = .white
         fabButton.setImage(UIImage(systemName: "plus"), for: .normal)
         fabButton.layer.cornerRadius = 30
