@@ -3,7 +3,9 @@ import UIKit
 class MainViewController: UITableViewController {
     
     private var currencies: [Currency] = CurrencyService.shared.loadSelectedCurrencies()
+    private var exchangeRates: [String: Double] = [:]
     private var fabButton: UIButton!
+    private var isLoading = false
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -12,25 +14,23 @@ class MainViewController: UITableViewController {
         setupFABButton()
         
         loadCurrencies()
-        
-        APIService.shared.fetchAllRates { result in
-            switch result {
-            case .success(let response):
-                print("Success! Base currencyL \(response.base)")
-                print("Exchange rates: \(response.rates)")
-            case .failure(let error):
-                print("API ERROR: \(error)")
-            }
-        }
+        fetchExchangeRates()
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        loadCurrencies()
     }
         
     private func setupViewController() {
         view.backgroundColor = .systemBackground
+        
+        refreshControl = UIRefreshControl()
+        refreshControl?.addTarget(self, action: #selector(handleRefresh), for: .valueChanged)
     }
     
     private func setupNavigationBar() {
         title = "Teymia Currency"
-        
         navigationItem.leftBarButtonItem = editButtonItem
         
         let settingsButton = UIBarButtonItem(
@@ -56,7 +56,6 @@ class MainViewController: UITableViewController {
         fabButton.addTarget(self, action: #selector(fabButtonTapped), for: .touchUpInside)
         
         fabButton.frame = CGRect(x: 0, y: 0, width: 60, height: 60)
-        
         fabButton.translatesAutoresizingMaskIntoConstraints = false
         
         view.addSubview(fabButton)
@@ -74,7 +73,42 @@ class MainViewController: UITableViewController {
         tableView.reloadData()
     }
     
+    private func fetchExchangeRates() {
+        guard !isLoading else { return }
+        isLoading = true
+        
+        CurrencyService.shared.fetchLatestRates { [weak self] result in
+            DispatchQueue.main.async {
+                self?.isLoading = false
+                self?.refreshControl?.endRefreshing()
+                
+                switch result {
+                case .success(let rates):
+                    self?.exchangeRates = rates
+                    self?.tableView.reloadData()
+                case .failure(let error):
+                    print("Failed to fetch rates: \(error)")
+                    self?.showErrorAlert()
+                }
+            }
+        }
+    }
+    
+    private func showErrorAlert() {
+        let alert = UIAlertController(
+            title: "Network Error",
+            message: "Failed to update exchange rates. Using cached data.",
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        present(alert, animated: true)
+    }
+    
     // MARK: - Actions
+    @objc private func handleRefresh() {
+        fetchExchangeRates()
+    }
+    
     @objc private func fabButtonTapped() {
         UIView.animate(withDuration: 0.1, animations: {
             self.fabButton.transform = CGAffineTransform(scaleX: 0.9, y: 0.9)
@@ -83,15 +117,15 @@ class MainViewController: UITableViewController {
                 self.fabButton.transform = CGAffineTransform.identity
             }
         }
+        
         let selectionVC = CurrencySelectionViewController()
+        selectionVC.delegate = self
         let navController = UINavigationController(rootViewController: selectionVC)
         navController.modalPresentationStyle = .pageSheet
         present(navController, animated: true)
     }
     
     @objc private func settingsButtonTapped() {
-        print("Settings button tapped")
-        
         let settingsVC = SettingsViewController()
         let navController = UINavigationController(rootViewController: settingsVC)
         navController.modalPresentationStyle = .pageSheet
@@ -108,8 +142,16 @@ extension MainViewController {
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = UITableViewCell(style: .value1, reuseIdentifier: "currencyCell")
         let currency = currencies[indexPath.row]
-                
+        
         cell.textLabel?.text = "\(currency.code) - \(currency.name)"
+        
+        if let rate = exchangeRates[currency.code] {
+            cell.detailTextLabel?.text = String(format: "%.4f", rate)
+            cell.detailTextLabel?.textColor = .systemGreen
+        } else {
+            cell.detailTextLabel?.text = "Loading..."
+            cell.detailTextLabel?.textColor = .secondaryLabel
+        }
         
         return cell
     }
@@ -125,6 +167,7 @@ extension MainViewController {
     override func tableView(_ tableView: UITableView, moveRowAt sourceIndexPath: IndexPath, to destinationIndexPath: IndexPath) {
         let movedCurrency = currencies.remove(at: sourceIndexPath.row)
         currencies.insert(movedCurrency, at: destinationIndexPath.row)
+        CurrencyService.shared.saveSelectedCurrencies(currencies)
     }
     
     override func tableView(_ tableView: UITableView, editingStyleForRowAt indexPath: IndexPath) -> UITableViewCell.EditingStyle {
@@ -132,9 +175,22 @@ extension MainViewController {
     }
     
     override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
-         if editingStyle == .delete {
-             currencies.remove(at: indexPath.row)
-             tableView.deleteRows(at: [indexPath], with: .automatic)
-         }
-     }
+        if editingStyle == .delete {
+            let currencyToRemove = currencies[indexPath.row]
+            currencies.remove(at: indexPath.row)
+            tableView.deleteRows(at: [indexPath], with: .automatic)
+            
+            var allCurrencies = CurrencyService.shared.loadSelectedCurrencies()
+            allCurrencies.removeAll { $0.code == currencyToRemove.code }
+            CurrencyService.shared.saveSelectedCurrencies(allCurrencies)
+        }
+    }
+}
+
+// MARK: - CurrencySelectionDelegate
+extension MainViewController: CurrencySelectionDelegate {
+    func didSelectCurrency(_ currency: Currency) {
+        loadCurrencies()
+        fetchExchangeRates()
+    }
 }
