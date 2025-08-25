@@ -2,7 +2,7 @@ import UIKit
 
 class MainViewController: UITableViewController {
     
-    private var currencies: [String] = ["USD", "EUR", "KZT", "RUB"]
+    private var currencies: [Currency] = CurrencyService.shared.loadSelectedCurrencies()
     private var fabButton: UIButton!
     
     override func viewDidLoad() {
@@ -10,13 +10,10 @@ class MainViewController: UITableViewController {
         setupViewController()
         setupNavigationBar()
         setupFABButton()
+        
+        loadCurrencies()
     }
-    
-    override func viewDidLayoutSubviews() {
-        super.viewDidLayoutSubviews()
-        fabButton.frame = CGRect(x: view.frame.width - 80, y: view.frame.height - 100, width: 60, height: 60)
-    }
-    
+        
     private func setupViewController() {
         view.backgroundColor = .systemBackground
     }
@@ -37,24 +34,45 @@ class MainViewController: UITableViewController {
     
     private func setupFABButton() {
         fabButton = UIButton(type: .system)
-        fabButton.backgroundColor = .label
+        fabButton.backgroundColor = .systemBlue
         fabButton.tintColor = .white
         fabButton.setImage(UIImage(systemName: "plus"), for: .normal)
         fabButton.layer.cornerRadius = 30
         fabButton.layer.shadowColor = UIColor.black.cgColor
-        fabButton.layer.shadowOffset = CGSize(width: 0, height: 2)
-        fabButton.layer.shadowRadius = 4
+        fabButton.layer.shadowOffset = CGSize(width: 0, height: 4)
+        fabButton.layer.shadowRadius = 8
         fabButton.layer.shadowOpacity = 0.3
         
         fabButton.addTarget(self, action: #selector(fabButtonTapped), for: .touchUpInside)
         
+        fabButton.frame = CGRect(x: 0, y: 0, width: 60, height: 60)
+        
+        fabButton.translatesAutoresizingMaskIntoConstraints = false
+        
         view.addSubview(fabButton)
+        
+        NSLayoutConstraint.activate([
+            fabButton.widthAnchor.constraint(equalToConstant: 60),
+            fabButton.heightAnchor.constraint(equalToConstant: 60),
+            fabButton.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -20),
+            fabButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -20)
+        ])
+    }
+    
+    private func loadCurrencies() {
+        currencies = CurrencyService.shared.loadSelectedCurrencies()
+        tableView.reloadData()
     }
     
     // MARK: - Actions
     @objc private func fabButtonTapped() {
-        print("FAB button tapped")
-        
+        UIView.animate(withDuration: 0.1, animations: {
+            self.fabButton.transform = CGAffineTransform(scaleX: 0.9, y: 0.9)
+        }) { _ in
+            UIView.animate(withDuration: 0.1) {
+                self.fabButton.transform = CGAffineTransform.identity
+            }
+        }
         let selectionVC = CurrencySelectionViewController()
         let navController = UINavigationController(rootViewController: selectionVC)
         navController.modalPresentationStyle = .pageSheet
@@ -78,11 +96,10 @@ extension MainViewController {
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = UITableViewCell(style: .value1, reuseIdentifier: "currencyCell"
-        )
+        let cell = UITableViewCell(style: .value1, reuseIdentifier: "currencyCell")
         let currency = currencies[indexPath.row]
-        cell.textLabel?.text = currency
-        cell.detailTextLabel?.text = "1 \(currency) = ..."
+                
+        cell.textLabel?.text = "\(currency.code) - \(currency.name)"
         
         return cell
     }

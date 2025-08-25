@@ -14,7 +14,7 @@
 		077BB59B2E5C1D0600289DEF /* Exceptions for "TeymiaCurrency" folder in "TeymiaCurrency" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				Info.plist,
+				Resources/Info.plist,
 			);
 			target = 077BB5882E5C1D0400289DEF /* TeymiaCurrency */;
 		};
@@ -147,7 +147,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = SXCBCPV7Y9;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = TeymiaCurrency/Info.plist;
+				INFOPLIST_FILE = TeymiaCurrency/Resources/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Teymia Currency";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.travel";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -182,7 +182,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = SXCBCPV7Y9;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = TeymiaCurrency/Info.plist;
+				INFOPLIST_FILE = TeymiaCurrency/Resources/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Teymia Currency";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.travel";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
