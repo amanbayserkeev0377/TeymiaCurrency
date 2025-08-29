@@ -4,25 +4,19 @@ struct MainView: View {
     @StateObject private var currencyStore = CurrencyStore()
     @State private var showingCurrencySelection = false
     @State private var showingSettings = false
-    @State private var selectedCurrencyType: Currency.CurrencyType = .fiat
+    @State private var isEditing = false
+    
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ZStack {
                 // Main content
                 VStack {
-                    // Segmented control for currency type
-                    Picker("Currency Type", selection: $selectedCurrencyType) {
-                        Text("Fiat").tag(Currency.CurrencyType.fiat)
-                        Text("Crypto").tag(Currency.CurrencyType.crypto)
-                    }
-                    .pickerStyle(SegmentedPickerStyle())
-                    .padding(.horizontal)
-                    
                     // Currency list
                         CurrencyListView(
-                            currencies: filteredCurrencies,
-                            currencyStore: currencyStore
+                            currencies: currencyStore.selectedCurrencies,
+                            currencyStore: currencyStore,
+                            isEditing: isEditing
                         )
                 }
                 
@@ -34,31 +28,47 @@ struct MainView: View {
                         Button(action: {
                             showingCurrencySelection = true
                         }) {
-                            Image(systemName: "plus")
-                                .font(.title2)
-                                .foregroundColor(.white)
-                                .frame(width: 60, height: 60)
-                                .background(Color.green)
-                                .clipShape(Circle())
-                                .shadow(color: .black.opacity(0.3), radius: 8, x: 0, y: 4)
+                            Image("icon_plus")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 28, height: 28)
+                                .foregroundStyle(.primary).opacity(0.8)
+                                .frame(width: 58, height: 58)
+                                .background(
+                                    Circle()
+                                        .fill(Color(.systemGray6).opacity(0.7))
+                                        .overlay(
+                                            Circle()
+                                                .stroke(Color.primary.opacity(0.1), lineWidth: 0.2)
+                                        )
+                                )
                         }
+                        .buttonStyle(.plain)
                         .padding(.trailing, 20)
                         .padding(.bottom, 20)
                     }
                 }
             }
-            .navigationTitle("Teymia Currency")
-            .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    EditButton()
+                    Button(action: {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            isEditing.toggle()
+                        }
+                    }) {
+                        Image(isEditing ? "icon_checkmark" : "icon_list")
+                            .resizable()
+                            .frame(width: 24, height: 24)
+                    }
                 }
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: {
                         showingSettings = true
                     }) {
-                        Image(systemName: "gearshape")
+                        Image("icon_settings")
+                            .resizable()
+                            .frame(width: 24, height: 24)
                     }
                 }
             }
@@ -83,10 +93,6 @@ struct MainView: View {
             }
         }
     }
-    
-    private var filteredCurrencies: [Currency] {
-        currencyStore.selectedCurrencies.filter { $0.type == selectedCurrencyType }
-    }
 }
 
 // MARK: - Currency List View
@@ -94,25 +100,36 @@ struct MainView: View {
 struct CurrencyListView: View {
     let currencies: [Currency]
     let currencyStore: CurrencyStore
+    let isEditing: Bool
     
     var body: some View {
         List {
             ForEach(currencies, id: \.code) { currency in
                 CurrencyRowView(currency: currency, currencyStore: currencyStore)
+                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                        Button(role: .destructive) {
+                            if let index = currencies.firstIndex(where: { $0.code == currency.code }) {
+                                deleteCurrencies(offsets: IndexSet([index]))
+                            }
+                        } label: {
+                            Image(systemName: "trash")
+                        }
+                    }
             }
-            .onDelete(perform: deleteCurrencies)
-            .onMove(perform: moveCurrencies)
+            .onDelete(perform: isEditing ? deleteCurrencies : nil)
+            .onMove(perform: isEditing ? moveCurrencies : nil)
         }
+        .environment(\.editMode, .constant(isEditing ? .active : .inactive))
         .listStyle(PlainListStyle())
     }
     
     private func deleteCurrencies(offsets: IndexSet) {
-        for index in offsets {
-            currencyStore.removeCurrency(currencies[index])
+                for index in offsets {
+                    currencyStore.removeCurrency(currencies[index])
+                }
         }
-    }
     
     private func moveCurrencies(from source: IndexSet, to destination: Int) {
-        currencyStore.moveCurrency(from: source, to: destination)
+            currencyStore.moveCurrency(from: source, to: destination)
     }
 }

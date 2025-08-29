@@ -6,7 +6,7 @@ struct SettingsView: View {
     @State private var showAbout = false
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             List {
                 // App Settings Section
                 Section("Settings") {
@@ -122,7 +122,7 @@ struct AboutView: View {
     @Environment(\.dismiss) private var dismiss
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             VStack(spacing: 30) {
                 // App Icon placeholder
                 RoundedRectangle(cornerRadius: 20)
@@ -194,13 +194,5 @@ struct AboutView: View {
                 }
             }
         }
-    }
-}
-
-// MARK: - Preview
-
-struct SettingsView_Previews: PreviewProvider {
-    static var previews: some View {
-        SettingsView()
     }
 }

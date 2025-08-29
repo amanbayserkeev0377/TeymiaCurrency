@@ -11,7 +11,7 @@ struct CurrencyRowView: View {
                 Image(CurrencyService.shared.getCurrencyIcon(for: currency))
                     .resizable()
                     .aspectRatio(contentMode: .fill)
-                    .frame(width: 32, height: 32)
+                    .frame(width: 36, height: 36)
                     .clipShape(Circle())
                     .overlay(
                         Circle()
@@ -53,16 +53,5 @@ struct CurrencyRowView: View {
         let formatter = RelativeDateTimeFormatter()
         formatter.unitsStyle = .abbreviated
         return formatter.localizedString(for: date, relativeTo: Date())
-    }
-}
-
-struct CurrencyRowView_Previews: PreviewProvider {
-    static var previews: some View {
-        let store = CurrencyStore()
-        let currency = Currency(code: "USD", name: "US Dollar", type: .fiat)
-        
-        CurrencyRowView(currency: currency, currencyStore: store)
-            .padding()
-            .previewLayout(.sizeThatFits)
     }
 }

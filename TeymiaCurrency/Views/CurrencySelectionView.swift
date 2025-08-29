@@ -9,56 +9,63 @@ struct CurrencySelectionView: View {
     @State private var showingSearchResults = false
     
     private var availableCurrencies: [Currency] {
-        let currencies = currencyStore.getAvailableCurrencies(for: selectedType)
+        let currencies = selectedType == .fiat ? CurrencyData.fiatCurrencies : CurrencyData.cryptoCurrencies
         
         if searchText.isEmpty {
             return currencies
         } else {
-            return CurrencyData.searchCurrencies(query: searchText, type: selectedType)
-                .filter { currency in
-                    !currencyStore.selectedCurrencies.contains(where: { $0.code == currency.code })
-                }
+            return currencies.filter { currency in
+                currency.code.lowercased().contains(searchText.lowercased()) ||
+                currency.name.lowercased().contains(searchText.lowercased())
+            }
         }
     }
     
     var body: some View {
-        NavigationView {
-            VStack {
-                // Currency type picker
-                Picker("Currency Type", selection: $selectedType) {
-                    Text("Fiat").tag(Currency.CurrencyType.fiat)
-                    Text("Crypto").tag(Currency.CurrencyType.crypto)
-                }
-                .pickerStyle(SegmentedPickerStyle())
-                .padding(.horizontal)
-                
-                // Currency list
-                List(availableCurrencies, id: \.code) { currency in
-                    CurrencySelectionRowView(
-                        currency: currency,
-                        onTap: {
-                            addCurrency(currency)
-                        }
-                    )
-                }
-                .listStyle(PlainListStyle())
-                .searchable(text: $searchText, prompt: "Search currencies...")
+        NavigationStack {
+            // Currency list
+            List(availableCurrencies, id: \.code) { currency in
+                CurrencySelectionRowView(
+                    currency: currency,
+                    isSelected: currencyStore.selectedCurrencies.contains(where: { $0.code == currency.code }),
+                    onTap: {
+                        toggleCurrency(currency)
+                    }
+                )
             }
-            .navigationTitle("Add Currency")
+            .listStyle(PlainListStyle())
+            .searchable(text: $searchText, prompt: "Search currencies...")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
-                        dismiss()
+                ToolbarItem(placement: .principal) {
+                    // Currency type picker in navigation bar
+                    Picker("Currency Type", selection: $selectedType) {
+                        Text("Fiat").tag(Currency.CurrencyType.fiat)
+                        Text("Crypto").tag(Currency.CurrencyType.crypto)
+                    }
+                    .pickerStyle(SegmentedPickerStyle())
+                    .frame(width: 200)
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(action: { dismiss() }) {
+                        Image("icon_xmark")
+                            .resizable()
+                            .foregroundStyle(Color("AppColor"))
+                            .frame(width: 24, height: 24)
                     }
                 }
             }
         }
     }
     
-    private func addCurrency(_ currency: Currency) {
-        currencyStore.addCurrency(currency)
-        dismiss()
+    private func toggleCurrency(_ currency: Currency) {
+        if currencyStore.selectedCurrencies.contains(where: { $0.code == currency.code }) {
+            // Remove from favorites
+            currencyStore.removeCurrency(currency)
+        } else {
+            // Add to favorites
+            currencyStore.addCurrency(currency)
+        }
     }
 }
 
@@ -66,6 +73,7 @@ struct CurrencySelectionView: View {
 
 struct CurrencySelectionRowView: View {
     let currency: Currency
+    let isSelected: Bool
     let onTap: () -> Void
     
     var body: some View {
@@ -88,18 +96,6 @@ struct CurrencySelectionRowView: View {
                         Text(currency.code)
                             .font(.headline)
                             .foregroundColor(.primary)
-                        
-                        // Currency type badge
-                        Text(currency.type.rawValue.uppercased())
-                            .font(.caption2)
-                            .fontWeight(.medium)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(
-                                RoundedRectangle(cornerRadius: 4)
-                                    .fill(currency.type == .fiat ? Color.blue.opacity(0.2) : Color.orange.opacity(0.2))
-                            )
-                            .foregroundColor(currency.type == .fiat ? .blue : .orange)
                     }
                     
                     Text(currency.name)
@@ -110,21 +106,14 @@ struct CurrencySelectionRowView: View {
                 
                 Spacer()
                 
-                // Add icon
-                Image(systemName: "plus.circle.fill")
-                    .foregroundColor(.green)
-                    .font(.title3)
+                // Favorite star icon
+                Image("icon_star2")
+                    .resizable()
+                    .foregroundStyle(isSelected ? .yellow : .gray)
+                    .frame(width: 26, height: 26)
             }
             .padding(.vertical, 4)
         }
         .buttonStyle(PlainButtonStyle())
-    }
-}
-
-// MARK: - Preview
-
-struct CurrencySelectionView_Previews: PreviewProvider {
-    static var previews: some View {
-        CurrencySelectionView(currencyStore: CurrencyStore())
     }
 }

@@ -134,20 +134,20 @@ class CurrencyService {
         // Map crypto codes to icon names in your assets
         // Adjust based on how you name crypto icons
         let cryptoIcons: [String: String] = [
-            "BTC": "bitcoin",
-            "ETH": "ethereum",
-            "BNB": "binancecoin",
-            "ADA": "cardano",
-            "XRP": "ripple",
-            "DOGE": "dogecoin",
-            "DOT": "polkadot",
-            "SOL": "solana",
-            "MATIC": "polygon",
-            "LINK": "chainlink",
-            "LTC": "litecoin",
-            "AVAX": "avalanche",
-            "UNI": "uniswap",
-            "ATOM": "cosmos"
+            "BTC": "BTC",
+            "ETH": "ETH",
+            "BNB": "BNB",
+            "ADA": "ADA",
+            "XRP": "XRP",
+            "DOGE": "DOGE",
+            "DOT": "DOT",
+            "SOL": "SOL",
+            "MATIC": "MATIC",
+            "LINK": "LINK",
+            "LTC": "LTC",
+            "AVAX": "AVAX",
+            "UNI": "UNI",
+            "ATOM": "ATOM"
         ]
         
         return cryptoIcons[cryptoCode] ?? cryptoCode.lowercased()
