@@ -16,6 +16,14 @@ class CurrencyStore: ObservableObject {
     init() {
         loadSelectedCurrencies()
         loadCachedRates()
+        
+        // Ensure we always have at least one currency (USD as default)
+        if selectedCurrencies.isEmpty {
+            if let usd = CurrencyData.findCurrency(by: "USD") {
+                selectedCurrencies = [usd]
+                saveCurrencies()
+            }
+        }
     }
     
     // MARK: - Currency Management
@@ -37,6 +45,12 @@ class CurrencyStore: ObservableObject {
     }
     
     func removeCurrency(_ currency: Currency) {
+        // Prevent removing the last currency
+        guard selectedCurrencies.count > 1 else {
+            errorMessage = "Cannot remove the last currency. Add another currency first."
+            return
+        }
+        
         selectedCurrencies.removeAll { $0.code == currency.code }
         saveCurrencies()
     }
@@ -141,5 +155,9 @@ class CurrencyStore: ObservableObject {
         let formatter = RelativeDateTimeFormatter()
         formatter.unitsStyle = .abbreviated
         return formatter.localizedString(for: lastUpdate, relativeTo: Date())
+    }
+    
+    var canRemoveMore: Bool {
+        return selectedCurrencies.count > 1
     }
 }

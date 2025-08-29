@@ -6,19 +6,15 @@ struct MainView: View {
     @State private var showingSettings = false
     @State private var isEditing = false
     
-    
     var body: some View {
         NavigationStack {
             ZStack {
-                // Main content
-                VStack {
-                    // Currency list
-                        CurrencyListView(
-                            currencies: currencyStore.selectedCurrencies,
-                            currencyStore: currencyStore,
-                            isEditing: isEditing
-                        )
-                }
+                // Currency list - always has at least 1 currency
+                CurrencyListView(
+                    currencies: currencyStore.selectedCurrencies,
+                    currencyStore: currencyStore,
+                    isEditing: isEditing
+                )
                 
                 // FAB Button
                 VStack {
@@ -71,9 +67,18 @@ struct MainView: View {
                             .frame(width: 24, height: 24)
                     }
                 }
-            }
-            .refreshable {
-                currencyStore.fetchRates()
+                
+                // Keyboard toolbar with global dismiss
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button(action: {
+                        // Dismiss any focused keyboard
+                        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder),
+                                                       to: nil, from: nil, for: nil)
+                    }) {
+                        Image(systemName: "keyboard.chevron.compact.down")
+                    }
+                }
             }
             .onAppear {
                 currencyStore.fetchRatesIfNeeded()
@@ -106,13 +111,13 @@ struct CurrencyListView: View {
         List {
             ForEach(currencies, id: \.code) { currency in
                 CurrencyRowView(currency: currency, currencyStore: currencyStore)
-                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                        Button(role: .destructive) {
-                            if let index = currencies.firstIndex(where: { $0.code == currency.code }) {
-                                deleteCurrencies(offsets: IndexSet([index]))
+                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                        if currencyStore.canRemoveMore {
+                            Button(role: .destructive) {
+                                currencyStore.removeCurrency(currency)
+                            } label: {
+                                Image(systemName: "trash")
                             }
-                        } label: {
-                            Image(systemName: "trash")
                         }
                     }
             }
@@ -124,12 +129,16 @@ struct CurrencyListView: View {
     }
     
     private func deleteCurrencies(offsets: IndexSet) {
-                for index in offsets {
-                    currencyStore.removeCurrency(currencies[index])
-                }
+        for index in offsets {
+            currencyStore.removeCurrency(currencies[index])
         }
+    }
     
     private func moveCurrencies(from source: IndexSet, to destination: Int) {
-            currencyStore.moveCurrency(from: source, to: destination)
+        currencyStore.moveCurrency(from: source, to: destination)
     }
+}
+
+#Preview {
+    MainView()
 }
