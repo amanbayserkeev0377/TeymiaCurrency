@@ -12,17 +12,17 @@ class CurrencyService {
     
     func fetchLatestRates(completion: @escaping (Result<[String: Double], Error>) -> Void) {
         let selectedCurrencies = loadSelectedCurrencies()
-        let currencyCodes = selectedCurrencies.map { $0.code }
         
-        if !currencyCodes.isEmpty {
-            apiService.fetchMultipleRates(from: "USD", to: currencyCodes) { result in
+        if !selectedCurrencies.isEmpty {
+            apiService.fetchRatesForCurrencies(selectedCurrencies) { [weak self] result in
                 switch result {
-                case .success(let response):
-                    self.saveRates(response.rates)
-                    completion(.success(response.rates))
+                case .success(let rates):
+                    self?.saveRates(rates)
+                    completion(.success(rates))
                 case .failure(let error):
                     print("API error: \(error)")
-                    if let cachedRates = self.loadCachedRates() {
+                    // Try to return cached rates on error
+                    if let cachedRates = self?.loadCachedRates() {
                         completion(.success(cachedRates))
                     } else {
                         completion(.failure(error))
@@ -30,14 +30,33 @@ class CurrencyService {
                 }
             }
         } else {
-            let mockResponse = apiService.getMockRates()
-            completion(.success(mockResponse.rates))
+            // Return empty rates if no currencies selected
+            completion(.success([:]))
         }
     }
     
     func convertAmount(_ amount: Double, from: String, to: String, completion: @escaping (Result<Double, Error>) -> Void) {
-        apiService.convertAmount(amount: amount, from: from, to: to, completion: completion)
+        // For conversion, we need to handle fiat-to-fiat, crypto-to-fiat, etc.
+        // This is a simplified version - you might want to expand this
+        fetchLatestRates { result in
+            switch result {
+            case .success(let rates):
+                guard let fromRate = rates[from], let toRate = rates[to] else {
+                    completion(.failure(NSError(domain: "CurrencyService", code: 1, userInfo: [NSLocalizedDescriptionKey: "Currency rates not available"])))
+                    return
+                }
+                
+                // Convert: amount * (toRate / fromRate)
+                let convertedAmount = amount * (toRate / fromRate)
+                completion(.success(convertedAmount))
+                
+            case .failure(let error):
+                completion(.failure(error))
+            }
+        }
     }
+    
+    // MARK: - Data Persistence
     
     private func saveRates(_ rates: [String: Double]) {
         do {
@@ -69,11 +88,12 @@ class CurrencyService {
     func loadSelectedCurrencies() -> [Currency] {
         guard let data = userDefaults.data(forKey: selectedCurrenciesKey),
               let currencies = try? JSONDecoder().decode([Currency].self, from: data) else {
+            // Default currencies if none saved
             return [
                 CurrencyData.findCurrency(by: "USD")!,
                 CurrencyData.findCurrency(by: "EUR")!,
                 CurrencyData.findCurrency(by: "KZT")!,
-                CurrencyData.findCurrency(by: "RUB")!
+                CurrencyData.findCurrency(by: "BTC")!
             ]
         }
         return currencies
@@ -89,35 +109,53 @@ class CurrencyService {
     
     func removeCurrency(at index: Int) {
         var currentCurrencies = loadSelectedCurrencies()
+        guard index < currentCurrencies.count else { return }
         currentCurrencies.remove(at: index)
         saveSelectedCurrencies(currentCurrencies)
     }
     
-    // MARK: - Mock Data
+    // MARK: - Currency Data
+    
     func getAvailableCurrencies(for type: Currency.CurrencyType) -> [Currency] {
         return CurrencyData.getCurrencies(for: type)
     }
     
-    func getExchangeRate(from: String, to: String) -> Double {
-        let testRates: [String: Double] = [
-            "USD_EUR": 0.85,
-            "USD_KZT": 450.0,
-            "USD_RUB": 75.0,
-            "EUR_USD": 1.18,
-            "EUR_KZT": 530.0,
-            "KZT_USD": 0.0022,
-            "KZT_EUR": 0.0019,
-            "BTC_USD": 50000.0
-        ]
-        
-        let key = "\(from)_\(to)"
-        return testRates[key] ?? 1.0
+    func getCurrencyIcon(for currency: Currency) -> String {
+        if currency.type == .fiat {
+            // For fiat currencies, use currency code directly (matches your assets)
+            return currency.code
+        } else {
+            // For crypto, use lowercase code or specific mapping
+            return getCryptoIconName(for: currency.code)
+        }
     }
     
-    private var selectedCurrencies: [Currency] = [
-        CurrencyData.findCurrency(by: "USD")!,
-        CurrencyData.findCurrency(by: "EUR")!,
-        CurrencyData.findCurrency(by: "KZT")!,
-        CurrencyData.findCurrency(by: "RUB")!
-    ]
+    private func getCryptoIconName(for cryptoCode: String) -> String {
+        // Map crypto codes to icon names in your assets
+        // Adjust based on how you name crypto icons
+        let cryptoIcons: [String: String] = [
+            "BTC": "bitcoin",
+            "ETH": "ethereum",
+            "BNB": "binancecoin",
+            "ADA": "cardano",
+            "XRP": "ripple",
+            "DOGE": "dogecoin",
+            "DOT": "polkadot",
+            "SOL": "solana",
+            "MATIC": "polygon",
+            "LINK": "chainlink",
+            "LTC": "litecoin",
+            "AVAX": "avalanche",
+            "UNI": "uniswap",
+            "ATOM": "cosmos"
+        ]
+        
+        return cryptoIcons[cryptoCode] ?? cryptoCode.lowercased()
+    }
+    
+    // MARK: - Cached Exchange Rates Access
+    
+    func getLastUpdateTime() -> Date? {
+        return userDefaults.object(forKey: lastUpdateKey) as? Date
+    }
 }
