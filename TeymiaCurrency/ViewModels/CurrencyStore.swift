@@ -21,6 +21,11 @@ class CurrencyStore: ObservableObject {
     init() {
         loadSelectedCurrencies()
         loadCachedRates()
+        print("🔍 [DEBUG] Loaded \(selectedCurrencies.count) currencies: \(selectedCurrencies.map { $0.code })")
+        print("🔍 [DEBUG] Loaded \(exchangeRates.count) cached rates")
+        if let lastUpdate = lastUpdateTime {
+            print("🔍 [DEBUG] Last update: \(lastUpdate)")
+        }
     }
     
     // MARK: - Currency Management
@@ -62,19 +67,23 @@ class CurrencyStore: ObservableObject {
     // MARK: - Exchange Rates
     
     func fetchRates() {
+        print("🚀 [DEBUG] fetchRates() called")
         isLoading = true
         errorMessage = nil
         
         Task {
             do {
                 let rates = try await fetchRatesAsync()
+                print("✅ [DEBUG] Got \(rates.count) rates in fetchRates")
                 await MainActor.run {
                     self.exchangeRates = rates
                     self.lastUpdateTime = Date()
                     self.saveRates(rates)
                     self.isLoading = false
+                    print("✅ [DEBUG] UI updated with rates")
                 }
             } catch {
+                print("❌ [DEBUG] Error in fetchRates: \(error)")
                 await MainActor.run {
                     self.errorMessage = error.localizedDescription
                     self.isLoading = false
@@ -84,8 +93,35 @@ class CurrencyStore: ObservableObject {
     }
     
     func fetchRatesIfNeeded() {
-        if exchangeRates.isEmpty || shouldRefreshRates() {
+        print("🔍 [DEBUG] fetchRatesIfNeeded called")
+        print("🔍 [DEBUG] exchangeRates.isEmpty: \(exchangeRates.isEmpty)")
+        print("🔍 [DEBUG] shouldRefreshRates: \(shouldRefreshRates())")
+        
+        // NEW: Check if we have rates for all selected currencies
+        let missingRates = selectedCurrencies.filter { currency in
+            !exchangeRates.keys.contains(currency.code)
+        }
+        print("🔍 [DEBUG] Missing rates for: \(missingRates.map { $0.code })")
+        
+        if exchangeRates.isEmpty || shouldRefreshRates() || !missingRates.isEmpty {
+            print("🔍 [DEBUG] Starting fetchRates...")
             fetchRates()
+        } else {
+            print("🔍 [DEBUG] Skipping fetch - all rates are fresh")
+        }
+    }
+    
+    func debugExchangeRates() {
+        print("🔍 [DEBUG] Current exchange rates:")
+        for (code, rate) in exchangeRates {
+            print("  \(code): \(rate)")
+        }
+        
+        print("🔍 [DEBUG] Display amounts:")
+        for currency in selectedCurrencies {
+            let amount = getDisplayAmount(for: currency.code)
+            let rate = getExchangeRate(for: currency.code)
+            print("  \(currency.code): amount=\(amount), rate=\(rate)")
         }
     }
     

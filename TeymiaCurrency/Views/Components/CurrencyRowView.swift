@@ -37,49 +37,35 @@ struct CurrencyRowView: View {
             Spacer()
             
             // Amount display/input
-            if isEditing {
-                TextField("0", text: $inputText)
-                    .keyboardType(.decimalPad)
-                    .focused($isFieldFocused)
-                    .multilineTextAlignment(.trailing)
-                    .font(.title)
-                    .fontWeight(.medium)
-                    .monospacedDigit()
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-                    .onSubmit {
+            TextField("0", text: $inputText)
+                .keyboardType(.decimalPad)
+                .focused($isFieldFocused)
+                .multilineTextAlignment(.trailing)
+                .font(.title)
+                .fontWeight(.medium)
+                .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+                .onChange(of: inputText) { newValue in
+                    handleTextInput(newValue)
+                }
+                .onChange(of: isFieldFocused) { focused in
+                    if focused {
+                        startEditing()
+                    } else {
                         commitEdit()
                     }
-                    .onChange(of: inputText) { newValue in
-                        handleTextInput(newValue)
-                    }
-                    .onAppear {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                            isFieldFocused = true
-                        }
-                    }
-            } else {
-                Text(formattedDisplayAmount)
-                    .font(.title)
-                    .fontWeight(.medium)
-                    .monospacedDigit()
-                    .foregroundColor(.primary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-                    .contentShape(Rectangle())
-            }
+                }
+                .onTapGesture {
+                    // Force focus on tap
+                    isFieldFocused = true
+                }
         }
         .padding(.vertical, 4)
         .contentShape(Rectangle())
         .onTapGesture {
-            if !isEditing {
-                startEditing()
-            }
-        }
-        .onChange(of: isFieldFocused) { focused in
-            if !focused && isEditing {
-                commitEdit()
-            }
+            // Make entire row tappable
+            isFieldFocused = true
         }
         .onReceive(currencyStore.$baseAmount) { _ in
             updateIfNotEditing()
@@ -95,63 +81,63 @@ struct CurrencyRowView: View {
     // MARK: - Private Methods
     
     private func startEditing() {
+        print("🔍 [DEBUG] Start editing \(currency.code)")
         isEditing = true
-        inputText = ""
         currencyStore.editingCurrency = currency.code
+        inputText = ""
     }
     
     private func commitEdit() {
+        print("🔍 [DEBUG] Commit edit \(currency.code): '\(inputText)'")
         isEditing = false
         currencyStore.editingCurrency = "USD"
         
+        // Parse and update amount
         if inputText.isEmpty || inputText == "0" {
             currencyStore.updateAmount(0, for: currency.code)
         } else if let amount = Double(inputText.replacingOccurrences(of: ",", with: ".")), amount >= 0 {
             currencyStore.updateAmount(amount, for: currency.code)
         }
-        
-        updateDisplayFromStore()
     }
     
     private func handleTextInput(_ newValue: String) {
+        // Filter invalid characters
         let filtered = newValue.filter { $0.isNumber || $0 == "." || $0 == "," }
         if filtered != newValue {
             inputText = filtered
             return
         }
         
+        // Handle decimal point
         if filtered == "." {
             inputText = "0."
             return
         }
         
-        if let amount = Double(filtered.replacingOccurrences(of: ",", with: ".")),
-           amount >= 0 {
+        // Update amount in real-time if editing
+        if isEditing, let amount = Double(filtered.replacingOccurrences(of: ",", with: ".")), amount >= 0 {
             currencyStore.updateAmount(amount, for: currency.code)
         }
     }
     
     private func updateIfNotEditing() {
-        if !isEditing && currencyStore.editingCurrency != currency.code {
+        if !isEditing {
             updateDisplayFromStore()
         }
     }
     
     private func updateDisplayFromStore() {
-        let displayAmount = currencyStore.getDisplayAmount(for: currency.code)
-        inputText = formatInputValue(displayAmount)
-    }
-    
-    private var formattedDisplayAmount: String {
-        let amount = currencyStore.getDisplayAmount(for: currency.code)
-        return formatDisplayValue(amount, for: currency)
+        if !isEditing {
+            let displayAmount = currencyStore.getDisplayAmount(for: currency.code)
+            inputText = formatDisplayValue(displayAmount, for: currency)
+        }
     }
     
     // MARK: - Formatting Methods
     
     private func formatInputValue(_ amount: Double) -> String {
         if amount == 0 {
-            return "0"
+            return ""
         }
         
         if currency.type == .crypto {
@@ -223,18 +209,6 @@ struct CurrencyRowView: View {
             }
         }
         
-        return formatter.string(from: NSNumber(value: amount)) ?? formatInputValue(amount)
-    }
-}
-
-// MARK: - UIView Extension
-
-extension UIView {
-    var allSubViews: [UIView] {
-        var subs = self.subviews
-        for subview in subviews {
-            subs.append(contentsOf: subview.allSubViews)
-        }
-        return subs
+        return formatter.string(from: NSNumber(value: amount)) ?? String(format: "%.2f", amount)
     }
 }

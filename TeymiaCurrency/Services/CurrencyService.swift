@@ -11,26 +11,33 @@ class CurrencyService {
     private init() {}
     
     func fetchLatestRates(completion: @escaping (Result<[String: Double], Error>) -> Void) {
+        print("🔍 [DEBUG] CurrencyService.fetchLatestRates called")
         let selectedCurrencies = loadSelectedCurrencies()
+        print("🔍 [DEBUG] Selected currencies: \(selectedCurrencies.map { $0.code })")
         
         if !selectedCurrencies.isEmpty {
+            print("🔍 [DEBUG] Calling API for \(selectedCurrencies.count) currencies")
             apiService.fetchRatesForCurrencies(selectedCurrencies) { [weak self] result in
                 switch result {
                 case .success(let rates):
+                    print("✅ [DEBUG] CurrencyService got \(rates.count) rates")
+                    print("✅ [DEBUG] Rate keys: \(Array(rates.keys))")
                     self?.saveRates(rates)
                     completion(.success(rates))
                 case .failure(let error):
-                    print("API error: \(error)")
+                    print("❌ [DEBUG] API error: \(error)")
                     // Try to return cached rates on error
                     if let cachedRates = self?.loadCachedRates() {
+                        print("🔄 [DEBUG] Using cached rates: \(cachedRates.count)")
                         completion(.success(cachedRates))
                     } else {
+                        print("❌ [DEBUG] No cached rates available")
                         completion(.failure(error))
                     }
                 }
             }
         } else {
-            // Return empty rates if no currencies selected
+            print("⚠️ [DEBUG] No currencies selected - returning empty rates")
             completion(.success([:]))
         }
     }
