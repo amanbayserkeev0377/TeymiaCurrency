@@ -11,11 +11,6 @@ struct Constants {
         // Rate limits
         static let requestTimeout: TimeInterval = 10.0
         static let maxRetryCount = 3
-        
-        // Refresh intervals
-        static let refreshInterval: TimeInterval = 300 // 5 minutes
-        static let fastRefreshInterval: TimeInterval = 60 // 1 minute
-        static let slowRefreshInterval: TimeInterval = 900 // 15 minutes
     }
     
     // MARK: - UserDefaults Keys

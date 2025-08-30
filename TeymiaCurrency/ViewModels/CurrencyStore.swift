@@ -1,29 +1,26 @@
 import SwiftUI
 import Foundation
 
-// MARK: - Currency Store (Main ViewModel)
 @MainActor
 class CurrencyStore: ObservableObject {
-    @Published var selectedCurrencies: [Currency] = []
+    @Published var selectedCurrencies: [Currency] = [] {
+        didSet {
+            saveCurrencies()
+        }
+    }
     @Published var exchangeRates: [String: Double] = [:]
     @Published var isLoading = false
     @Published var errorMessage: String?
     @Published var lastUpdateTime: Date?
     
+    @Published var baseAmount: Double = 1.0
+    @Published var editingCurrency: String = "USD"
     private let currencyService = CurrencyService.shared
     private let userDefaults = UserDefaults.standard
     
     init() {
         loadSelectedCurrencies()
         loadCachedRates()
-        
-        // Ensure we always have at least one currency (USD as default)
-        if selectedCurrencies.isEmpty {
-            if let usd = CurrencyData.findCurrency(by: "USD") {
-                selectedCurrencies = [usd]
-                saveCurrencies()
-            }
-        }
     }
     
     // MARK: - Currency Management
@@ -45,14 +42,12 @@ class CurrencyStore: ObservableObject {
     }
     
     func removeCurrency(_ currency: Currency) {
-        // Prevent removing the last currency
-        guard selectedCurrencies.count > 1 else {
-            errorMessage = "Cannot remove the last currency. Add another currency first."
-            return
-        }
-        
         selectedCurrencies.removeAll { $0.code == currency.code }
         saveCurrencies()
+    }
+    
+    var canRemoveMore: Bool {
+        return selectedCurrencies.count > 1
     }
     
     func moveCurrency(from source: IndexSet, to destination: Int) {
@@ -96,7 +91,7 @@ class CurrencyStore: ObservableObject {
     
     private func shouldRefreshRates() -> Bool {
         guard let lastUpdate = lastUpdateTime else { return true }
-        return Date().timeIntervalSince(lastUpdate) > Constants.API.refreshInterval
+        return Date().timeIntervalSince(lastUpdate) > 3600
     }
     
     private func fetchRatesAsync() async throws -> [String: Double] {
@@ -105,6 +100,31 @@ class CurrencyStore: ObservableObject {
                 continuation.resume(with: result)
             }
         }
+    }
+    
+    // MARK: - Convertation Logic
+    func updateAmount(_ amount: Double, for currencyCode: String) {
+        editingCurrency = currencyCode
+        
+        if currencyCode == "USD" {
+            baseAmount = amount
+        } else {
+            let rate = getExchangeRate(for: currencyCode)
+            baseAmount = amount / rate
+        }
+    }
+    
+    func getDisplayAmount(for currencyCode: String) -> Double {
+        if currencyCode == "USD" {
+            return baseAmount
+        } else {
+            let rate = getExchangeRate(for: currencyCode)
+            return baseAmount * rate
+        }
+    }
+    
+    func getExchangeRate(for currencyCode: String) -> Double {
+        return exchangeRates[currencyCode] ?? 1.0
     }
     
     // MARK: - Data Persistence
@@ -124,30 +144,11 @@ class CurrencyStore: ObservableObject {
         }
     }
     
-    // MARK: - Helper Methods
-    
-    func getExchangeRate(for currency: Currency) -> Double {
-        return exchangeRates[currency.code] ?? 1.0
-    }
-    
-    func getFormattedRate(for currency: Currency, amount: Double = 1.0) -> String {
-        let rate = getExchangeRate(for: currency)
-        let convertedAmount = amount * rate
-        return convertedAmount.formatted(for: currency)
-    }
-    
-    func getAvailableCurrencies(for type: Currency.CurrencyType) -> [Currency] {
-        return currencyService.getAvailableCurrencies(for: type)
-            .filter { currency in
-                !selectedCurrencies.contains(where: { $0.code == currency.code })
-            }
-    }
-    
     // MARK: - Computed Properties
     
     var needsUpdate: Bool {
         guard let lastUpdate = lastUpdateTime else { return true }
-        return lastUpdate.isOlderThan(minutes: 5)
+        return lastUpdate.isOlderThan(minutes: 60)
     }
     
     var lastUpdateString: String {
@@ -155,9 +156,5 @@ class CurrencyStore: ObservableObject {
         let formatter = RelativeDateTimeFormatter()
         formatter.unitsStyle = .abbreviated
         return formatter.localizedString(for: lastUpdate, relativeTo: Date())
-    }
-    
-    var canRemoveMore: Bool {
-        return selectedCurrencies.count > 1
     }
 }

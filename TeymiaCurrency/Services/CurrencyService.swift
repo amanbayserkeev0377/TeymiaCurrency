@@ -130,27 +130,28 @@ class CurrencyService {
         }
     }
     
+    // MARK: - Updated getCryptoIconName method for CurrencyService.swift
+
     private func getCryptoIconName(for cryptoCode: String) -> String {
-        // Map crypto codes to icon names in your assets
-        // Adjust based on how you name crypto icons
-        let cryptoIcons: [String: String] = [
-            "BTC": "BTC",
-            "ETH": "ETH",
-            "BNB": "BNB",
-            "ADA": "ADA",
-            "XRP": "XRP",
-            "DOGE": "DOGE",
-            "DOT": "DOT",
-            "SOL": "SOL",
-            "MATIC": "MATIC",
-            "LINK": "LINK",
-            "LTC": "LTC",
-            "AVAX": "AVAX",
-            "UNI": "UNI",
-            "ATOM": "ATOM"
+        // All available crypto icons in your Assets.xcassets
+        let availableCryptoIcons: Set<String> = [
+            "AAVE", "ADA", "ALGO", "APT", "ARB", "ATOM", "AVAX", "AXS", "BCH",
+            "BGB", "BNB", "BTC", "BUSD", "CFX", "CRO", "DAI", "DOGE", "DOT",
+            "EGLD", "ETC", "ETH", "FIL", "FLR", "GRT", "HBAR", "ICP", "INJ",
+            "JLP", "KAS", "LDO", "LEO", "LINK", "LTC", "LUNC", "METH", "NEAR",
+            "OP", "POL", "PYTH", "QNT", "RENDER", "SEI", "SHIB", "SOL", "STETH",
+            "STX", "SUI", "TAO", "THETA", "TIA", "TON", "TRX", "UNI", "USDC",
+            "USDT", "VET", "WBT", "WBTC", "XLM", "XMR", "XRP", "XTZ", "ZEC"
         ]
         
-        return cryptoIcons[cryptoCode] ?? cryptoCode.lowercased()
+        // Return icon name if exists, otherwise use generic crypto icon or placeholder
+        if availableCryptoIcons.contains(cryptoCode) {
+            return cryptoCode
+        } else {
+            // Fallback to generic crypto icon or SF Symbol
+            print("⚠️ Missing crypto icon: \(cryptoCode)")
+            return "BTC" // Use Bitcoin as fallback
+        }
     }
     
     // MARK: - Cached Exchange Rates Access
