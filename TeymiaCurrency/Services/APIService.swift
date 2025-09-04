@@ -224,14 +224,14 @@ class APIService {
             "HBAR": "hedera-hashgraph",
             "ICP": "internet-computer",
             "INJ": "injective-protocol",
-            "JLP": "jupiter-exchange-solana", // или другой Jupiter token ID
+            "JLP": "jupiter-exchange-solana",
             "KAS": "kaspa",
             "LDO": "lido-dao",
             "LEO": "leo-token",
             "LINK": "chainlink",
             "LTC": "litecoin",
             "LUNC": "terra-luna-classic",
-            "METH": "mantle-staked-ether", // или другой METH ID
+            "METH": "mantle-staked-ether",
             "NEAR": "near",
             "OP": "optimism",
             "POL": "matic-network",
@@ -253,7 +253,7 @@ class APIService {
             "USDC": "usd-coin",
             "USDT": "tether",
             "VET": "vechain",
-            "WBT": "whitebit", // или другой WBT ID
+            "WBT": "whitebit",
             "WBTC": "wrapped-bitcoin",
             "XLM": "stellar",
             "XMR": "monero",

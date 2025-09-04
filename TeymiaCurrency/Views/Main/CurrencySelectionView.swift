@@ -50,7 +50,6 @@ struct CurrencySelectionView: View {
                     Button(action: { dismiss() }) {
                         Image("icon_xmark")
                             .resizable()
-                            .foregroundStyle(Color("AppColor"))
                             .frame(width: 24, height: 24)
                     }
                 }

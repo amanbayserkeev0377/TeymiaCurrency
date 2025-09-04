@@ -79,18 +79,17 @@ struct CurrencyRowView: View {
     }
     
     // MARK: - Private Methods
-    
+
     private func startEditing() {
         print("🔍 [DEBUG] Start editing \(currency.code)")
         isEditing = true
         currencyStore.editingCurrency = currency.code
         inputText = ""
     }
-    
+
     private func commitEdit() {
         print("🔍 [DEBUG] Commit edit \(currency.code): '\(inputText)'")
         isEditing = false
-        currencyStore.editingCurrency = "USD"
         
         // Parse and update amount
         if inputText.isEmpty || inputText == "0" {
@@ -98,8 +97,11 @@ struct CurrencyRowView: View {
         } else if let amount = Double(inputText.replacingOccurrences(of: ",", with: ".")), amount >= 0 {
             currencyStore.updateAmount(amount, for: currency.code)
         }
+        
+        // Reset editing currency AFTER updating amount
+        currencyStore.editingCurrency = "USD"
     }
-    
+
     private func handleTextInput(_ newValue: String) {
         // Filter invalid characters
         let filtered = newValue.filter { $0.isNumber || $0 == "." || $0 == "," }
@@ -114,18 +116,23 @@ struct CurrencyRowView: View {
             return
         }
         
-        // Update amount in real-time if editing
-        if isEditing, let amount = Double(filtered.replacingOccurrences(of: ",", with: ".")), amount >= 0 {
+        // Update amount in real-time ONLY if editing this currency
+        if isEditing &&
+           currencyStore.editingCurrency == currency.code,
+           let amount = Double(filtered.replacingOccurrences(of: ",", with: ".")),
+           amount >= 0 {
+            print("🔍 [DEBUG] Live update: \(amount) for \(currency.code)")
             currencyStore.updateAmount(amount, for: currency.code)
         }
     }
     
     private func updateIfNotEditing() {
+        // Only update if NOT editing ANY currency (not just this one)
         if !isEditing {
             updateDisplayFromStore()
         }
     }
-    
+
     private func updateDisplayFromStore() {
         if !isEditing {
             let displayAmount = currencyStore.getDisplayAmount(for: currency.code)

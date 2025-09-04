@@ -127,7 +127,7 @@ class CurrencyStore: ObservableObject {
     
     private func shouldRefreshRates() -> Bool {
         guard let lastUpdate = lastUpdateTime else { return true }
-        return Date().timeIntervalSince(lastUpdate) > 3600
+        return Date().timeIntervalSince(lastUpdate) > 21600
     }
     
     private func fetchRatesAsync() async throws -> [String: Double] {
@@ -140,22 +140,40 @@ class CurrencyStore: ObservableObject {
     
     // MARK: - Convertation Logic
     func updateAmount(_ amount: Double, for currencyCode: String) {
+        print("🔍 [DEBUG] updateAmount: \(amount) for \(currencyCode)")
         editingCurrency = currencyCode
         
         if currencyCode == "USD" {
             baseAmount = amount
         } else {
             let rate = getExchangeRate(for: currencyCode)
-            baseAmount = amount / rate
+            let currency = selectedCurrencies.first { $0.code == currencyCode }
+            
+            if currency?.type == .crypto {
+                // For crypto: if user enters 1 BTC, baseAmount should be 1 * 110857 USD
+                baseAmount = amount * rate
+            } else {
+                // For fiat: if user enters 85 RUB, baseAmount should be 85 / 85 = 1 USD
+                baseAmount = amount / rate
+            }
         }
+        print("🔍 [DEBUG] New baseAmount: \(baseAmount)")
     }
-    
+
     func getDisplayAmount(for currencyCode: String) -> Double {
         if currencyCode == "USD" {
             return baseAmount
         } else {
             let rate = getExchangeRate(for: currencyCode)
-            return baseAmount * rate
+            let currency = selectedCurrencies.first { $0.code == currencyCode }
+            
+            if currency?.type == .crypto {
+                // For crypto: if baseAmount = 110857 USD, then BTC = 110857 / 110857 = 1
+                return baseAmount / rate
+            } else {
+                // For fiat: if baseAmount = 1 USD, then RUB = 1 * 85 = 85
+                return baseAmount * rate
+            }
         }
     }
     
