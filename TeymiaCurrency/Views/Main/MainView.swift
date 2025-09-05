@@ -2,6 +2,8 @@ import SwiftUI
 
 struct MainView: View {
     @StateObject private var currencyStore = CurrencyStore()
+    @Environment(\.colorScheme) private var colorScheme
+    @AppStorage("themeMode") private var themeMode: ThemeMode = .system
     @State private var showingCurrencySelection = false
     @State private var showingSettings = false
     
@@ -58,9 +60,11 @@ struct MainView: View {
             }
             .sheet(isPresented: $showingCurrencySelection) {
                 CurrencySelectionView(currencyStore: currencyStore)
+                    .preferredColorScheme(themeMode.colorScheme)
             }
             .sheet(isPresented: $showingSettings) {
                 SettingsView()
+                    .preferredColorScheme(themeMode.colorScheme)
             }
             .alert("Error", isPresented: .constant(currencyStore.errorMessage != nil)) {
                 Button("OK") {

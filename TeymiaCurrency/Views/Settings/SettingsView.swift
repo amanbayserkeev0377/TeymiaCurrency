@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
+    @AppStorage("themeMode") private var themeMode: ThemeMode = .system
     @State private var autoRefresh = true
     @State private var showAbout = false
     
@@ -9,6 +10,7 @@ struct SettingsView: View {
         NavigationStack {
             List {
                 Section {
+                    AppearanceSection()
                     LanguageSection()
                 }
                 
@@ -132,7 +134,7 @@ struct SettingsView: View {
                     Button(action:  {
                         dismiss()
                     }) {
-                        Image("icon_checkmark")
+                        Image("icon_xmark")
                             .resizable()
                             .frame(width: 24, height: 24)
                     }
