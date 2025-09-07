@@ -6,7 +6,7 @@ struct ThemeOption {
     
     static let system = ThemeOption(name: "appearance_system".localized, iconName: "icon_blackwhite")
     static let light = ThemeOption(name: "appearance_light".localized, iconName: "icon_sun")
-    static let dark = ThemeOption(name: "appearance_dark", iconName: "icon_moon")
+    static let dark = ThemeOption(name: "appearance_dark".localized, iconName: "icon_moon")
     
     static let allOptions = [system, light, dark]
 }
@@ -16,9 +16,13 @@ struct AppearanceSection: View {
     @Environment(\.colorScheme) private var colorScheme
     
     var body: some View {
-            NavigationLink {
-                AppearanceView()
-            } label: {
+        ZStack {
+            NavigationLink(destination: AppearanceView()) {
+                EmptyView()
+            }
+            .opacity(0)
+            
+            HStack {
                 Label(
                     title: { Text("appearance".localized) },
                     icon: {
@@ -27,7 +31,16 @@ struct AppearanceSection: View {
                             .frame(width: 24, height: 24)
                     }
                 )
+                
+                Spacer()
+                
+                Image("icon_chevron_right")
+                    .resizable()
+                    .frame(width: 18, height: 18)
+                    .foregroundStyle(.secondary)
             }
+            .contentShape(Rectangle())
+        }
     }
 }
 
@@ -52,7 +65,6 @@ struct AppearanceView: View {
                                 .frame(width: 24, height: 24)
                             
                             Text(ThemeOption.allOptions[mode.rawValue].name)
-                                .foregroundStyle(.primary)
                             
                             Spacer()
                             

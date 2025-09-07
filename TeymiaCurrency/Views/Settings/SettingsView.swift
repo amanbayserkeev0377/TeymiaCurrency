@@ -13,70 +13,6 @@ struct SettingsView: View {
                     AppearanceSection()
                     LanguageSection()
                 }
-                
-                // Data Sources Section
-                Section("Data Sources") {
-                    HStack {
-                        Image(systemName: "banknote")
-                            .foregroundColor(.green)
-                            .frame(width: 20)
-                        
-                        VStack(alignment: .leading) {
-                            Text("Fiat Currencies")
-                            Text("ExchangeRate API")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                    
-                    HStack {
-                        Image(systemName: "bitcoinsign.circle")
-                            .foregroundColor(.orange)
-                            .frame(width: 20)
-                        
-                        VStack(alignment: .leading) {
-                            Text("Cryptocurrencies")
-                            Text("CoinGecko API")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                }
-                
-                // Auto-Update Section
-                Section("Auto-Update") {
-                    HStack {
-                        Image(systemName: "clock.arrow.2.circlepath")
-                            .foregroundColor(.blue)
-                            .frame(width: 20)
-                        
-                        VStack(alignment: .leading) {
-                            Text("Refresh Interval")
-                            Text("Every 6 hours automatically")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                        
-                        Spacer()
-                        
-                        Text("6h")
-                            .foregroundColor(.secondary)
-                    }
-                    
-                    HStack {
-                        Image(systemName: "wifi")
-                            .foregroundColor(.green)
-                            .frame(width: 20)
-                        
-                        VStack(alignment: .leading) {
-                            Text("Offline Mode")
-                            Text("Uses cached rates when offline")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                }
-                
                 // MARK: - About
                 Section {
                     // Rate
@@ -93,9 +29,7 @@ struct SettingsView: View {
                                     .frame(width: 24, height: 24)
                             }
                         )
-                        .withExternalLinkIcon()
                     }
-                    .tint(.primary)
                     
                     // Share
                     ShareLink(
@@ -109,25 +43,72 @@ struct SettingsView: View {
                                     .frame(width: 24, height: 24)
                             }
                         )
-                        .withExternalLinkIcon()
                     }
-                    .tint(.primary)
-                    
-                    NavigationLink {
-                        LicensesView()
+                }
+                
+                // MARK: - LEGAL
+                Section {
+                    // Privacy Policy
+                    Button {
+                        if let url = URL(string: "https://www.notion.so/Privacy-Policy-1ffd5178e65a80d4b255fd5491fba4a8") {
+                            UIApplication.shared.open(url)
+                        } // <- CHANGE TO REAL URL
                     } label: {
                         Label(
-                            title: { Text("licenses".localized) },
+                            title: { Text("privacy_policy".localized) },
                             icon: {
-                                Image("icon_list")
+                                Image("icon_lock")
                                     .resizable()
                                     .frame(width: 24, height: 24)
                             }
                         )
                     }
+                    
+                    // Terms of Service
+                    Button {
+                        if let url = URL(string: "https://www.notion.so/Privacy-Policy-1ffd5178e65a80d4b255fd5491fba4a8") {
+                            UIApplication.shared.open(url)
+                        } // <- CHANGE TO REAL URL
+                    } label: {
+                        Label(
+                            title: { Text("terms_of_service".localized) },
+                            icon: {
+                                Image("icon_document")
+                                    .resizable()
+                                    .frame(width: 24, height: 24)
+                            }
+                        )
+                    }
+                    
+                    // Licenses
+                    ZStack {
+                        NavigationLink(destination: LicensesView()) {
+                            EmptyView()
+                        }
+                        .opacity(0)
+                        
+                        HStack {
+                            Label(
+                                title: { Text("licenses".localized) },
+                                icon: {
+                                    Image("icon_list")
+                                        .resizable()
+                                        .frame(width: 24, height: 24)
+                                }
+                            )
+                            
+                            Spacer()
+                            
+                            Image("icon_chevron_right")
+                                .resizable()
+                                .frame(width: 18, height: 18)
+                                .foregroundStyle(.secondary)
+                        }
+                        .contentShape(Rectangle())
+                    }
                 }
             }
-            .navigationTitle("Settings")
+            .navigationTitle("settings".localized)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {

@@ -48,9 +48,7 @@ struct LicenseRow: View {
                 
                 Spacer()
             }
-            .withExternalLinkIcon()
         }
-        .tint(.primary)
     }
     
     private var cornerRadius: CGFloat {
@@ -60,36 +58,5 @@ struct LicenseRow: View {
         case 41...48: return 10
         default: return 12
         }
-    }
-}
-
-// MARK: - External Link Modifier
-
-struct ExternalLinkModifier: ViewModifier {
-    var trailingText: String? = nil
-    
-    func body(content: Content) -> some View {
-        HStack {
-            content
-            Spacer()
-            
-            if let text = trailingText {
-                Text(text)
-                    .foregroundStyle(.secondary)
-            }
-            
-            Image(systemName: "arrow.up.right")
-                .font(.footnote)
-                .fontWeight(.bold)
-                .foregroundStyle(.tertiary)
-        }
-    }
-}
-
-
-
-extension View {
-    func withExternalLinkIcon(trailingText: String? = nil) -> some View {
-        self.modifier(ExternalLinkModifier(trailingText: trailingText))
     }
 }

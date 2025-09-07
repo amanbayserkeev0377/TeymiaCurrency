@@ -32,13 +32,7 @@ struct LanguageSection: View {
                 
                 Text(currentLanguage)
                     .foregroundStyle(.secondary)
-                
-                Image(systemName: "arrow.up.right")
-                    .font(.footnote)
-                    .fontWeight(.bold)
-                    .foregroundStyle(.tertiary)
             }
         }
-        .tint(.primary)
     }
 }

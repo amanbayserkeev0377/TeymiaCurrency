@@ -26,7 +26,7 @@ struct CurrencyRowView: View {
                 Text(currency.code)
                     .font(.headline)
                     .fontWeight(.semibold)
-                    .foregroundColor(.primary)
+                    .foregroundStyle(.primary)
                 
                 Text(currency.name)
                     .font(.subheadline)

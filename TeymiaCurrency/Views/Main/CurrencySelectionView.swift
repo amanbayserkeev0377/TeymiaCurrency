@@ -9,7 +9,13 @@ struct CurrencySelectionView: View {
     @State private var showingSearchResults = false
     
     private var availableCurrencies: [Currency] {
-        let currencies = selectedType == .fiat ? CurrencyData.fiatCurrencies : CurrencyData.cryptoCurrencies
+        let currencies: [Currency]
+        
+        if searchText.isEmpty {
+            currencies = selectedType == .fiat ? CurrencyData.fiatCurrencies : CurrencyData.cryptoCurrencies
+        } else {
+            currencies = CurrencyData.fiatCurrencies + CurrencyData.cryptoCurrencies
+            }
         
         if searchText.isEmpty {
             return currencies
@@ -17,13 +23,20 @@ struct CurrencySelectionView: View {
             return currencies.filter { currency in
                 currency.code.lowercased().contains(searchText.lowercased()) ||
                 currency.name.lowercased().contains(searchText.lowercased())
+            }.sorted { lhs, rhs in
+                let lhsExactMatch = lhs.code.lowercased() == searchText.lowercased()
+                let rhsExactMatch = rhs.code.lowercased() == searchText.lowercased()
+                
+                if lhsExactMatch && !rhsExactMatch { return true }
+                if !lhsExactMatch && rhsExactMatch { return false }
+                
+                return lhs.code < rhs.code
             }
         }
     }
     
     var body: some View {
         NavigationStack {
-            // Currency list
             List(availableCurrencies, id: \.code) { currency in
                 CurrencySelectionRowView(
                     currency: currency,
@@ -34,14 +47,14 @@ struct CurrencySelectionView: View {
                 )
             }
             .listStyle(PlainListStyle())
-            .searchable(text: $searchText, prompt: "Search currencies...")
+            .searchable(text: $searchText)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .principal) {
                     // Currency type picker in navigation bar
                     Picker("Currency Type", selection: $selectedType) {
-                        Text("Fiat").tag(Currency.CurrencyType.fiat)
-                        Text("Crypto").tag(Currency.CurrencyType.crypto)
+                        Text("fiat".localized).tag(Currency.CurrencyType.fiat)
+                        Text("crypto".localized).tag(Currency.CurrencyType.crypto)
                     }
                     .pickerStyle(SegmentedPickerStyle())
                     .frame(width: 200)
@@ -94,7 +107,7 @@ struct CurrencySelectionRowView: View {
                     HStack {
                         Text(currency.code)
                             .font(.headline)
-                            .foregroundColor(.primary)
+                            .foregroundStyle(.primary)
                     }
                     
                     Text(currency.name)
