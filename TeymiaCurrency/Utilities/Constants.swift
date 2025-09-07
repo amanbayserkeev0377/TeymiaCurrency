@@ -33,7 +33,7 @@ struct Constants {
         static let buildNumber = "1"
         
         // Default currencies for first launch
-        static let defaultCurrencies = ["USD", "EUR", "KZT", "BTC"]
+        static let defaultCurrencies = ["USD", "CNY", "RUB", "BTC"]
         
         // Maximum number of currencies user can add
         static let maxCurrencies = 50

@@ -17,7 +17,7 @@ struct SettingsView: View {
                 Section {
                     // Rate
                     Button {
-                        if let url = URL(string: "https://apps.apple.com/app/id6746747903") {
+                        if let url = URL(string: "https://apps.apple.com/app/") { // <- Add after
                             UIApplication.shared.open(url)
                         }
                     } label: {
@@ -33,7 +33,7 @@ struct SettingsView: View {
                     
                     // Share
                     ShareLink(
-                        item: URL(string: "https://apps.apple.com/app/id6746747903")!
+                        item: URL(string: "https://apps.apple.com/app/")! // <- Add after
                     ) {
                         Label(
                             title: { Text("share_app".localized) },
@@ -50,9 +50,9 @@ struct SettingsView: View {
                 Section {
                     // Privacy Policy
                     Button {
-                        if let url = URL(string: "https://www.notion.so/Privacy-Policy-1ffd5178e65a80d4b255fd5491fba4a8") {
+                        if let url = URL(string: "https://www.notion.so/Privacy-Policy-267d5178e65a8017ad5afda2e3f004fc") {
                             UIApplication.shared.open(url)
-                        } // <- CHANGE TO REAL URL
+                        }
                     } label: {
                         Label(
                             title: { Text("privacy_policy".localized) },
@@ -66,7 +66,7 @@ struct SettingsView: View {
                     
                     // Terms of Service
                     Button {
-                        if let url = URL(string: "https://www.notion.so/Privacy-Policy-1ffd5178e65a80d4b255fd5491fba4a8") {
+                        if let url = URL(string: "https://www.notion.so/Terms-of-Service-267d5178e65a804a9e80d8660c798b57") {
                             UIApplication.shared.open(url)
                         } // <- CHANGE TO REAL URL
                     } label: {

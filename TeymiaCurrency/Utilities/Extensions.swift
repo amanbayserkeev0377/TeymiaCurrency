@@ -47,6 +47,15 @@ extension UserDefaults {
     }
 }
 
+extension Currency {
+    var dynamicLocalizedName: String {
+        if type == .fiat {
+            return "currency_\(code.lowercased())".localized
+        }
+        return name
+    }
+}
+
 // MARK: - Localization
 
 extension String {

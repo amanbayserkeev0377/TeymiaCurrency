@@ -22,7 +22,7 @@ struct CurrencySelectionView: View {
         } else {
             return currencies.filter { currency in
                 currency.code.lowercased().contains(searchText.lowercased()) ||
-                currency.name.lowercased().contains(searchText.lowercased())
+                currency.dynamicLocalizedName.lowercased().contains(searchText.lowercased())
             }.sorted { lhs, rhs in
                 let lhsExactMatch = lhs.code.lowercased() == searchText.lowercased()
                 let rhsExactMatch = rhs.code.lowercased() == searchText.lowercased()
@@ -110,7 +110,7 @@ struct CurrencySelectionRowView: View {
                             .foregroundStyle(.primary)
                     }
                     
-                    Text(currency.name)
+                    Text(currency.dynamicLocalizedName)
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                         .lineLimit(1)

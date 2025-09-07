@@ -270,7 +270,7 @@ struct CurrencyData {
         
         return currencies.filter { currency in
             currency.code.lowercased().contains(query.lowercased()) ||
-            currency.name.lowercased().contains(query.lowercased())
+            currency.dynamicLocalizedName.lowercased().contains(query.lowercased())
         }
     }
 }

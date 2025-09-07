@@ -28,18 +28,18 @@ struct CurrencyRowView: View {
                     .fontWeight(.semibold)
                     .foregroundStyle(.primary)
                 
-                Text(currency.name)
+                Text(currency.dynamicLocalizedName)
                     .font(.subheadline)
                     .foregroundColor(.secondary)
                     .lineLimit(1)
+                    .minimumScaleFactor(0.8)
             }
-            
-            Spacer()
             
             // Amount display/input
             TextField("0", text: $inputText)
                 .keyboardType(.decimalPad)
                 .focused($isFieldFocused)
+                .frame(maxWidth: .infinity, alignment: .trailing)
                 .multilineTextAlignment(.trailing)
                 .font(.title)
                 .fontWeight(.medium)
