@@ -108,10 +108,10 @@ struct AppIconGridView: View {
     
     var body: some View {
         LazyVGrid(columns: columns, spacing: 20) {
-            ForEach(AppIcon.allIcons, id: \.id) { icon in
+            ForEach(AppIcon.allIcons) { icon in
                 AppIconButton(
                     icon: icon,
-                    isSelected: selectedIcon.id == icon.id,
+                    isSelected: selectedIcon == icon,
                     onTap: {
                         onIconSelected(icon)
                     }
@@ -130,19 +130,16 @@ struct AppIconButton: View {
     
     var body: some View {
         Button(action: onTap) {
-            VStack(spacing: 8) {
-                ZStack {
-                    Image(icon.preview)
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: 60, height: 60)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(isSelected ? .gray : .gray.opacity(0.5), lineWidth: isSelected ? 2 : 0.5)
-                        )
-                }
-            }
+            Image(icon.imageName)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 60, height: 60)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(isSelected ? .gray : .gray.opacity(0.3),
+                               lineWidth: isSelected ? 2 : 0.3)
+                )
         }
         .buttonStyle(.plain)
     }

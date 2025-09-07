@@ -15,17 +15,21 @@ class CurrencyStore: ObservableObject {
     
     @Published var baseAmount: Double = 1.0
     @Published var editingCurrency: String = "USD"
+    @Published var isFirstLaunch: Bool = false
+    
     private let currencyService = CurrencyService.shared
     private let userDefaults = UserDefaults.standard
     
     init() {
         loadSelectedCurrencies()
         loadCachedRates()
+        
+        // Check if this is first launch
+        isFirstLaunch = exchangeRates.isEmpty
+        
         print("🔍 [DEBUG] Loaded \(selectedCurrencies.count) currencies: \(selectedCurrencies.map { $0.code })")
         print("🔍 [DEBUG] Loaded \(exchangeRates.count) cached rates")
-        if let lastUpdate = lastUpdateTime {
-            print("🔍 [DEBUG] Last update: \(lastUpdate)")
-        }
+        print("🔍 [DEBUG] Is first launch: \(isFirstLaunch)")
     }
     
     // MARK: - Currency Management
@@ -80,6 +84,7 @@ class CurrencyStore: ObservableObject {
                     self.lastUpdateTime = Date()
                     self.saveRates(rates)
                     self.isLoading = false
+                    self.isFirstLaunch = false
                     print("✅ [DEBUG] UI updated with rates")
                 }
             } catch {
@@ -87,6 +92,7 @@ class CurrencyStore: ObservableObject {
                 await MainActor.run {
                     self.errorMessage = error.localizedDescription
                     self.isLoading = false
+                    self.isFirstLaunch = false
                 }
             }
         }
@@ -94,34 +100,16 @@ class CurrencyStore: ObservableObject {
     
     func fetchRatesIfNeeded() {
         print("🔍 [DEBUG] fetchRatesIfNeeded called")
-        print("🔍 [DEBUG] exchangeRates.isEmpty: \(exchangeRates.isEmpty)")
-        print("🔍 [DEBUG] shouldRefreshRates: \(shouldRefreshRates())")
         
-        // NEW: Check if we have rates for all selected currencies
         let missingRates = selectedCurrencies.filter { currency in
             !exchangeRates.keys.contains(currency.code)
         }
-        print("🔍 [DEBUG] Missing rates for: \(missingRates.map { $0.code })")
         
         if exchangeRates.isEmpty || shouldRefreshRates() || !missingRates.isEmpty {
             print("🔍 [DEBUG] Starting fetchRates...")
             fetchRates()
         } else {
             print("🔍 [DEBUG] Skipping fetch - all rates are fresh")
-        }
-    }
-    
-    func debugExchangeRates() {
-        print("🔍 [DEBUG] Current exchange rates:")
-        for (code, rate) in exchangeRates {
-            print("  \(code): \(rate)")
-        }
-        
-        print("🔍 [DEBUG] Display amounts:")
-        for currency in selectedCurrencies {
-            let amount = getDisplayAmount(for: currency.code)
-            let rate = getExchangeRate(for: currency.code)
-            print("  \(currency.code): amount=\(amount), rate=\(rate)")
         }
     }
     
@@ -138,7 +126,7 @@ class CurrencyStore: ObservableObject {
         }
     }
     
-    // MARK: - Convertation Logic
+    // MARK: - Conversion Logic
     func updateAmount(_ amount: Double, for currencyCode: String) {
         print("🔍 [DEBUG] updateAmount: \(amount) for \(currencyCode)")
         editingCurrency = currencyCode
@@ -150,10 +138,8 @@ class CurrencyStore: ObservableObject {
             let currency = selectedCurrencies.first { $0.code == currencyCode }
             
             if currency?.type == .crypto {
-                // For crypto: if user enters 1 BTC, baseAmount should be 1 * 110857 USD
                 baseAmount = amount * rate
             } else {
-                // For fiat: if user enters 85 RUB, baseAmount should be 85 / 85 = 1 USD
                 baseAmount = amount / rate
             }
         }
@@ -168,10 +154,8 @@ class CurrencyStore: ObservableObject {
             let currency = selectedCurrencies.first { $0.code == currencyCode }
             
             if currency?.type == .crypto {
-                // For crypto: if baseAmount = 110857 USD, then BTC = 110857 / 110857 = 1
                 return baseAmount / rate
             } else {
-                // For fiat: if baseAmount = 1 USD, then RUB = 1 * 85 = 85
                 return baseAmount * rate
             }
         }

@@ -35,36 +35,46 @@ struct CurrencyRowView: View {
                     .minimumScaleFactor(0.8)
             }
             
-            // Amount display/input
-            TextField("0", text: $inputText)
-                .keyboardType(.decimalPad)
-                .focused($isFieldFocused)
-                .frame(maxWidth: .infinity, alignment: .trailing)
-                .multilineTextAlignment(.trailing)
-                .font(.title)
-                .fontWeight(.medium)
-                .monospacedDigit()
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
-                .onChange(of: inputText) { newValue in
-                    handleTextInput(newValue)
-                }
-                .onChange(of: isFieldFocused) { focused in
-                    if focused {
-                        startEditing()
-                    } else {
-                        commitEdit()
+            // Amount display/input with loading state
+            ZStack {
+                TextField("0", text: $inputText)
+                    .keyboardType(.decimalPad)
+                    .focused($isFieldFocused)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    .multilineTextAlignment(.trailing)
+                    .font(.title)
+                    .fontWeight(.medium)
+                    .monospacedDigit()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                    .opacity(shouldShowLoading ? 0 : 1)
+                    .onChange(of: inputText) { newValue in
+                        handleTextInput(newValue)
+                    }
+                    .onChange(of: isFieldFocused) { focused in
+                        if focused {
+                            startEditing()
+                        } else {
+                            commitEdit()
+                        }
+                    }
+                    .onTapGesture {
+                        isFieldFocused = true
+                    }
+                
+                // Show loading indicator
+                if shouldShowLoading {
+                    HStack {
+                        Spacer()
+                        ProgressView()
+                            .scaleEffect(0.7)
                     }
                 }
-                .onTapGesture {
-                    // Force focus on tap
-                    isFieldFocused = true
-                }
+            }
         }
         .padding(.vertical, 4)
         .contentShape(Rectangle())
         .onTapGesture {
-            // Make entire row tappable
             isFieldFocused = true
         }
         .onReceive(currencyStore.$baseAmount) { _ in
@@ -73,101 +83,74 @@ struct CurrencyRowView: View {
         .onReceive(currencyStore.$exchangeRates) { _ in
             updateIfNotEditing()
         }
+        .onReceive(currencyStore.$isFirstLaunch) { _ in
+            updateIfNotEditing()
+        }
+        .onReceive(currencyStore.$isLoading) { _ in
+            updateIfNotEditing()
+        }
         .onAppear {
             updateDisplayFromStore()
         }
     }
     
-    // MARK: - Private Methods
-
+    private var shouldShowLoading: Bool {
+        return currencyStore.isFirstLaunch &&
+               currencyStore.isLoading &&
+               currency.code != "USD"
+    }
+    
     private func startEditing() {
-        print("🔍 [DEBUG] Start editing \(currency.code)")
         isEditing = true
         currencyStore.editingCurrency = currency.code
         inputText = ""
     }
 
     private func commitEdit() {
-        print("🔍 [DEBUG] Commit edit \(currency.code): '\(inputText)'")
         isEditing = false
         
-        // Parse and update amount
         if inputText.isEmpty || inputText == "0" {
             currencyStore.updateAmount(0, for: currency.code)
         } else if let amount = Double(inputText.replacingOccurrences(of: ",", with: ".")), amount >= 0 {
             currencyStore.updateAmount(amount, for: currency.code)
         }
         
-        // Reset editing currency AFTER updating amount
         currencyStore.editingCurrency = "USD"
     }
 
     private func handleTextInput(_ newValue: String) {
-        // Filter invalid characters
         let filtered = newValue.filter { $0.isNumber || $0 == "." || $0 == "," }
         if filtered != newValue {
             inputText = filtered
             return
         }
         
-        // Handle decimal point
         if filtered == "." {
             inputText = "0."
             return
         }
         
-        // Update amount in real-time ONLY if editing this currency
         if isEditing &&
            currencyStore.editingCurrency == currency.code,
            let amount = Double(filtered.replacingOccurrences(of: ",", with: ".")),
            amount >= 0 {
-            print("🔍 [DEBUG] Live update: \(amount) for \(currency.code)")
             currencyStore.updateAmount(amount, for: currency.code)
         }
     }
     
     private func updateIfNotEditing() {
-        // Only update if NOT editing ANY currency (not just this one)
         if !isEditing {
             updateDisplayFromStore()
         }
     }
 
     private func updateDisplayFromStore() {
-        if !isEditing {
+        if !isEditing && !shouldShowLoading {
             let displayAmount = currencyStore.getDisplayAmount(for: currency.code)
-            inputText = formatDisplayValue(displayAmount, for: currency)
-        }
-    }
-    
-    // MARK: - Formatting Methods
-    
-    private func formatInputValue(_ amount: Double) -> String {
-        if amount == 0 {
-            return ""
-        }
-        
-        if currency.type == .crypto {
-            if amount >= 1000 {
-                return String(format: "%.0f", amount)
-            } else if amount >= 1 {
-                return String(format: "%.2f", amount)
-            } else if amount >= 0.01 {
-                return String(format: "%.4f", amount)
-            } else {
-                return String(format: "%.6f", amount)
-            }
-        } else {
-            if amount >= 1000000 {
-                return String(format: "%.0f", amount)
-            } else if amount >= 1000 {
-                return String(format: "%.0f", amount)
-            } else if amount >= 1 {
-                return String(format: "%.2f", amount)
-            } else if amount >= 0.01 {
-                return String(format: "%.4f", amount)
-            } else {
-                return String(format: "%.6f", amount)
+            let newText = formatDisplayValue(displayAmount, for: currency)
+            
+            if inputText != newText {
+                inputText = newText
             }
         }
     }
@@ -182,16 +165,12 @@ struct CurrencyRowView: View {
             
             if amount >= 1000 {
                 formatter.maximumFractionDigits = 0
-                formatter.minimumFractionDigits = 0
             } else if amount >= 1 {
                 formatter.maximumFractionDigits = 2
-                formatter.minimumFractionDigits = 0
             } else if amount >= 0.01 {
                 formatter.maximumFractionDigits = 4
-                formatter.minimumFractionDigits = 0
             } else {
                 formatter.maximumFractionDigits = 6
-                formatter.minimumFractionDigits = 0
             }
         } else {
             formatter.numberStyle = .decimal
@@ -200,19 +179,14 @@ struct CurrencyRowView: View {
             
             if amount >= 1000000 {
                 formatter.maximumFractionDigits = 0
-                formatter.minimumFractionDigits = 0
             } else if amount >= 1000 {
                 formatter.maximumFractionDigits = 2
-                formatter.minimumFractionDigits = 0
             } else if amount >= 1 {
                 formatter.maximumFractionDigits = 2
-                formatter.minimumFractionDigits = 0
             } else if amount >= 0.01 {
                 formatter.maximumFractionDigits = 4
-                formatter.minimumFractionDigits = 0
             } else {
                 formatter.maximumFractionDigits = 6
-                formatter.minimumFractionDigits = 0
             }
         }
         

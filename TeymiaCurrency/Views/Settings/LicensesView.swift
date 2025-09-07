@@ -4,10 +4,10 @@ struct LicensesView: View {
     var body: some View {
         List {
             Section("licenses_section_attributions".localized) {
-                LicenseRow(iconName: "icon_settings", attribution: "UI icons", url: "https://icons8.com/icons/liquid-glass")
-                LicenseRow(iconName: "USD", attribution: "Country flags", url: "https://www.flaticon.com/packs/countrys-flags?word=flags")
-                LicenseRow(iconName: "BTC", attribution: "Cryptocurrency", url: "https://www.flaticon.com/packs/cryptocurrency-15207963")
-                LicenseRow(iconName: "preview_appicon_main", attribution: "Exchange icon", url: "https://www.vecteezy.com/png/13391079-cryptocurrency-exchange-3d-illustration", iconSize: 30)
+                LicenseRow(iconName: "icon_settings", attribution: "icons8.com", url: "https://icons8.com/icons/liquid-glass")
+                LicenseRow(iconName: "USD", attribution: "flaticon.com", url: "https://www.flaticon.com/packs/countrys-flags?word=flags")
+                LicenseRow(iconName: "BTC", attribution: "flaticon.com", url: "https://www.flaticon.com/packs/cryptocurrency-15207963")
+                LicenseRow(iconName: "preview_appicon_main", attribution: "vecteezy.com", url: "https://www.vecteezy.com/png/13391079-cryptocurrency-exchange-3d-illustration", iconSize: 30)
             }
         }
         .navigationTitle("licenses".localized)

@@ -98,8 +98,8 @@ class CurrencyService {
             // Default currencies if none saved
             return [
                 CurrencyData.findCurrency(by: "USD")!,
-                CurrencyData.findCurrency(by: "EUR")!,
-                CurrencyData.findCurrency(by: "KZT")!,
+                CurrencyData.findCurrency(by: "CNY")!,
+                CurrencyData.findCurrency(by: "RUB")!,
                 CurrencyData.findCurrency(by: "BTC")!
             ]
         }
