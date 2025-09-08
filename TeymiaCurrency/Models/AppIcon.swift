@@ -6,10 +6,16 @@ enum AppIcon {
     
     static let allIcons: [AppIcon] = [
         .main,
-        .alternate(name: "AppIconGold", imageName: "preview_appicon_gold"),
-        .alternate(name: "AppIconGlobe", imageName: "preview_appicon_globe"),
-        .alternate(name: "AppIconPurple", imageName: "preview_appicon_purple"),
+        .alternate(name: "AppIconDollar", imageName: "preview_appicon_dollar"),
+        .alternate(name: "AppIconDollar2", imageName: "preview_appicon_dollar2"),
+        .alternate(name: "AppIconDollar3", imageName: "preview_appicon_dollar3"),
+        .alternate(name: "AppIconDollar4", imageName: "preview_appicon_dollar4"),
         .alternate(name: "AppIconGreen", imageName: "preview_appicon_green"),
+        .alternate(name: "AppIconGold", imageName: "preview_appicon_gold"),
+        .alternate(name: "AppIconPink", imageName: "preview_appicon_pink"),
+        .alternate(name: "AppIconPurple", imageName: "preview_appicon_purple"),
+        .alternate(name: "AppIconYuan", imageName: "preview_appicon_yuan"),
+        .alternate(name: "AppIconGlobe", imageName: "preview_appicon_globe"),
         .alternate(name: "AppIconBlue", imageName: "preview_appicon_blue")
     ]
     
