@@ -17,7 +17,7 @@ struct SettingsView: View {
                 Section {
                     // Rate
                     Button {
-                        if let url = URL(string: "https://apps.apple.com/app/") { // <- Add after
+                        if let url = URL(string: "https://apps.apple.com/app/id6752235997") {
                             UIApplication.shared.open(url)
                         }
                     } label: {
@@ -33,7 +33,7 @@ struct SettingsView: View {
                     
                     // Share
                     ShareLink(
-                        item: URL(string: "https://apps.apple.com/app/")! // <- Add after
+                        item: URL(string: "https://apps.apple.com/app/id6752235997")!
                     ) {
                         Label(
                             title: { Text("share_app".localized) },
