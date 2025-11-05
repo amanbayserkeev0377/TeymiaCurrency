@@ -23,19 +23,7 @@ struct Constants {
         // Maximum number of currencies user can add
         static let maxCurrencies = 50
     }
-        
-    // MARK: - Formatting
-    
-    struct Formatting {
-        static let maxFiatDecimals = 2
-        static let maxCryptoDecimals = 6
-        static let minCryptoDecimals = 2
-        
-        // Large number formatting
-        static let thousandSeparator = ","
-        static let decimalSeparator = "."
-    }
-    
+            
     // MARK: - Error Messages
     
     struct ErrorMessages {
