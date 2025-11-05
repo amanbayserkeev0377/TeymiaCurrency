@@ -95,7 +95,7 @@ struct CurrencySelectionRowView: View {
                 Image(CurrencyService.shared.getCurrencyIcon(for: currency))
                     .resizable()
                     .aspectRatio(contentMode: .fill)
-                    .frame(width: 44, height: 44)
+                    .frame(width: 42, height: 42)
                     .clipShape(Circle())
                     .overlay(
                         Circle()
@@ -106,14 +106,14 @@ struct CurrencySelectionRowView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     HStack {
                         Text(currency.code)
-                            .font(.title3)
+                            .font(.headline)
                             .fontWeight(.semibold)
                             .fontDesign(.rounded)
                             .foregroundStyle(.primary)
                     }
                     
                     Text(currency.dynamicLocalizedName)
-                        .font(.headline)
+                        .font(.subheadline)
                         .fontDesign(.rounded)
                         .foregroundColor(.secondary)
                         .lineLimit(1)

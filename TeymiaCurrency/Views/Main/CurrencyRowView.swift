@@ -4,8 +4,10 @@ struct CurrencyRowView: View {
     let currency: Currency
     @ObservedObject var currencyStore: CurrencyStore
     
+    // ✅ Use shared focus state
+    @FocusState.Binding var focusedCurrency: String?
+    
     @State private var inputText: String = ""
-    @FocusState private var isFieldFocused: Bool
     
     var body: some View {
         HStack(spacing: 12) {
@@ -13,7 +15,7 @@ struct CurrencyRowView: View {
             Image(currency.code)
                 .resizable()
                 .aspectRatio(contentMode: .fill)
-                .frame(width: 44, height: 44)
+                .frame(width: 42, height: 42)
                 .clipShape(Circle())
                 .overlay(
                     Circle()
@@ -23,24 +25,24 @@ struct CurrencyRowView: View {
             // Currency info
             VStack(alignment: .leading, spacing: 2) {
                 Text(currency.code)
-                    .font(.title3)
+                    .font(.headline)
                     .fontWeight(.semibold)
                     .fontDesign(.rounded)
                     .foregroundStyle(.primary)
                 
                 Text(currency.dynamicLocalizedName)
-                    .font(.headline)
+                    .font(.subheadline)
                     .fontDesign(.rounded)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
             }
             
-            // Amount display/input with loading state
+            // Amount display/input
             ZStack {
                 TextField("0", text: $inputText)
                     .keyboardType(.decimalPad)
-                    .focused($isFieldFocused)
+                    .focused($focusedCurrency, equals: currency.code)
                     .frame(maxWidth: .infinity, alignment: .trailing)
                     .multilineTextAlignment(.trailing)
                     .font(.title)
@@ -53,15 +55,7 @@ struct CurrencyRowView: View {
                     .onChange(of: inputText) { newValue in
                         handleTextInput(newValue)
                     }
-                    .onChange(of: isFieldFocused) { focused in
-                        if focused {
-                            startEditing()
-                        } else {
-                            commitEdit()
-                        }
-                    }
                 
-                // Show loading indicator
                 if shouldShowLoading {
                     HStack {
                         Spacer()
@@ -73,106 +67,118 @@ struct CurrencyRowView: View {
         }
         .padding(.vertical, 4)
         .contentShape(Rectangle())
+        .onTapGesture {
+            // ✅ Simple focus transfer
+            focusedCurrency = currency.code
+        }
+        // ✅ Watch for focus changes
+        .onChange(of: focusedCurrency) { newFocusedCode in
+            handleFocusChange(newFocusedCode)
+        }
         .onChange(of: currencyStore.baseAmount) { _ in
-            updateDisplayIfNeeded()
+            updateDisplayIfNotEditing()
         }
         .onChange(of: currencyStore.exchangeRates) { _ in
-            updateDisplayIfNeeded()
-        }
-        .onChange(of: currencyStore.editingCurrency) { _ in
-            updateDisplayIfNeeded()
+            updateDisplayIfNotEditing()
         }
         .onAppear {
             updateDisplayFromStore()
         }
     }
     
-    private var isThisFieldBeingEdited: Bool {
-        return isFieldFocused && currencyStore.editingCurrency == currency.code
+    private var isThisFieldFocused: Bool {
+        focusedCurrency == currency.code
     }
     
     private var shouldShowLoading: Bool {
-        return currencyStore.isFirstLaunch &&
-               currencyStore.isLoading &&
-               currency.code != "USD"
+        currencyStore.isFirstLaunch &&
+        currencyStore.isLoading &&
+        currency.code != "USD"
     }
     
-    private func startEditing() {
-        currencyStore.editingCurrency = currency.code
-        inputText = ""
-    }
-
-    private func commitEdit() {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-            if inputText.isEmpty || inputText == "0" {
-                currencyStore.updateAmount(0, for: currency.code)
-            } else {
-                // Remove spaces before parsing
-                let cleanedInput = inputText.replacingOccurrences(of: " ", with: "")
-                if let amount = Double(cleanedInput.replacingOccurrences(of: ",", with: ".")), amount >= 0 {
-                    currencyStore.updateAmount(amount, for: currency.code)
-                }
-            }
-            
-            if currencyStore.editingCurrency == currency.code {
-                currencyStore.editingCurrency = "USD"
-            }
+    // ✅ Handle focus changes cleanly
+    private func handleFocusChange(_ newFocusedCode: String?) {
+        if newFocusedCode == currency.code {
+            // This field just got focus - start editing
+            currencyStore.editingCurrency = currency.code
+            inputText = ""
+        } else if currencyStore.editingCurrency == currency.code {
+            // This field lost focus - commit
+            commitEdit()
         }
     }
-
+    
+    private func commitEdit() {
+        if inputText.isEmpty || inputText == "0" {
+            currencyStore.updateAmount(0, for: currency.code)
+        } else {
+            let cleanedInput = inputText
+                .replacingOccurrences(of: " ", with: "")
+                .replacingOccurrences(of: ",", with: ".")
+            
+            if let amount = Double(cleanedInput), amount >= 0 {
+                currencyStore.updateAmount(amount, for: currency.code)
+            }
+        }
+        
+        updateDisplayFromStore()
+    }
+    
     private func handleTextInput(_ newValue: String) {
-        // Remove all spaces first to get clean input
         let withoutSpaces = newValue.replacingOccurrences(of: " ", with: "")
+        let filtered = withoutSpaces.filter { $0.isNumber || $0 == "," }
         
-        // Filter invalid characters (allow only digits, dot, comma)
-        let filtered = withoutSpaces.filter { $0.isNumber || $0 == "." || $0 == "," }
+        let commaCount = filtered.filter { $0 == "," }.count
+        if commaCount > 1 { return }
         
-        // Auto-fix leading dot
-        if filtered == "." || filtered == "," {
-            inputText = "0."
+        if filtered == "," {
+            inputText = "0,"
             return
         }
         
-        // Parse the number
-        guard let amount = Double(filtered.replacingOccurrences(of: ",", with: ".")) else {
+        let forParsing = filtered.replacingOccurrences(of: ",", with: ".")
+        guard let amount = Double(forParsing) else {
             if !filtered.isEmpty {
                 inputText = filtered
             }
             return
         }
         
-        // Format with spaces in real-time
-        let formattedText = formatInputValue(amount)
+        let formattedText = formatInputValue(amount, hasDecimal: filtered.contains(","))
         
-        // Update the display
         if inputText != formattedText {
             inputText = formattedText
         }
         
-        // Update amount in real-time only if THIS field is being edited
-        if isThisFieldBeingEdited && amount >= 0 {
+        // ✅ Simple check
+        if isThisFieldFocused && amount >= 0 {
             currencyStore.updateAmount(amount, for: currency.code)
         }
     }
     
-    // ✅ NEW: Format input value in real-time with spaces
-    private func formatInputValue(_ amount: Double) -> String {
+    private func formatInputValue(_ amount: Double, hasDecimal: Bool) -> String {
         let formatter = NumberFormatter()
         formatter.numberStyle = .decimal
         formatter.groupingSeparator = " "
-        formatter.decimalSeparator = "."
-        formatter.maximumFractionDigits = 6
+        formatter.decimalSeparator = ","
+        
+        if hasDecimal {
+            formatter.maximumFractionDigits = 6
+            formatter.minimumFractionDigits = 0
+        } else {
+            formatter.maximumFractionDigits = 0
+        }
         
         return formatter.string(from: NSNumber(value: amount)) ?? String(amount)
     }
     
-    private func updateDisplayIfNeeded() {
-        guard !isThisFieldBeingEdited else { return }
+    private func updateDisplayIfNotEditing() {
+        guard !isThisFieldFocused else { return }
         guard !shouldShowLoading else { return }
         
         updateDisplayFromStore()
     }
-
+    
     private func updateDisplayFromStore() {
         let displayAmount = currencyStore.getDisplayAmount(for: currency.code)
         let newText = formatDisplayValue(displayAmount, for: currency)
@@ -185,11 +191,11 @@ struct CurrencyRowView: View {
     private func formatDisplayValue(_ amount: Double, for currency: Currency) -> String {
         let formatter = NumberFormatter()
         
+        formatter.numberStyle = .decimal
+        formatter.groupingSeparator = " "
+        formatter.decimalSeparator = ","
+        
         if currency.type == .crypto {
-            formatter.numberStyle = .decimal
-            formatter.groupingSeparator = " "
-            formatter.decimalSeparator = "."
-            
             if amount >= 1000 {
                 formatter.maximumFractionDigits = 0
             } else if amount >= 1 {
@@ -200,10 +206,6 @@ struct CurrencyRowView: View {
                 formatter.maximumFractionDigits = 6
             }
         } else {
-            formatter.numberStyle = .decimal
-            formatter.groupingSeparator = " "
-            formatter.decimalSeparator = "."
-            
             if amount >= 1000000 {
                 formatter.maximumFractionDigits = 0
             } else if amount >= 1000 {

@@ -7,20 +7,26 @@ struct MainView: View {
     @State private var showingCurrencySelection = false
     @State private var showingSettings = false
     
+    @FocusState private var focusedCurrency: String?
+    
     var body: some View {
         NavigationStack {
             List {
                 ForEach(currencyStore.selectedCurrencies, id: \.code) { currency in
-                    CurrencyRowView(currency: currency, currencyStore: currencyStore)
-                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                            if currencyStore.canRemoveMore {
-                                Button(role: .destructive) {
-                                    currencyStore.removeCurrency(currency)
-                                } label: {
-                                    Image(systemName: "trash")
-                                }
+                    CurrencyRowView(
+                        currency: currency,
+                        currencyStore: currencyStore,
+                        focusedCurrency: $focusedCurrency  // ✅ Pass binding
+                    )
+                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                        if currencyStore.canRemoveMore {
+                            Button(role: .destructive) {
+                                currencyStore.removeCurrency(currency)
+                            } label: {
+                                Image(systemName: "trash")
                             }
                         }
+                    }
                 }
                 .onMove(perform: moveCurrencies)
             }
@@ -73,9 +79,6 @@ struct MainView: View {
             } message: {
                 Text(currencyStore.errorMessage ?? "")
             }
-            .onTapGesture {
-                hideKeyboard()
-            }
         }
     }
     
@@ -84,6 +87,6 @@ struct MainView: View {
     }
     
     private func hideKeyboard() {
-        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+        focusedCurrency = nil
     }
 }

@@ -17,6 +17,8 @@ class CurrencyStore: ObservableObject {
     @Published var editingCurrency: String = "USD"
     @Published var isFirstLaunch: Bool = false
     
+    @Published var focusedCurrencyCode: String? = nil
+    
     private let currencyService = CurrencyService.shared
     private let userDefaults = UserDefaults.standard
     
