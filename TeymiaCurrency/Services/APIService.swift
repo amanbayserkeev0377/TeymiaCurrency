@@ -1,91 +1,40 @@
 import Foundation
 
+/// Service responsible for fetching currency exchange rates from external APIs
+/// - Fiat currencies: ExchangeRate API
+/// - Cryptocurrencies: CoinGecko API
 class APIService {
     static let shared = APIService()
     
-    // ExchangeRate API for fiat currencies
-    private let fiatBaseURL = "https://api.exchangerate-api.com/v4"
+    // MARK: - API Endpoints
     
-    // CoinGecko API for crypto currencies
+    private let fiatBaseURL = "https://api.exchangerate-api.com/v4"
     private let cryptoBaseURL = "https://api.coingecko.com/api/v3"
+    
+    // MARK: - Initialization
     
     private init() {}
     
-    // MARK: - Fiat Currency Methods (ExchangeRate API)
+    // MARK: - Public Methods
     
-    func fetchFiatRates(baseCurrency: String = "USD", completion: @escaping (Result<FiatExchangeResponse, Error>) -> Void) {
-        let urlString = "\(fiatBaseURL)/latest/\(baseCurrency)"
-        print("🌐 [FIAT API] Requesting: \(urlString)")
-        performRequest(urlString: urlString, completion: completion)
-    }
-    
-    func fetchMultipleFiatRates(from baseCurrency: String, to targetCurrencies: [String], completion: @escaping (Result<[String: Double], Error>) -> Void) {
-        print("💱 [FIAT] Fetching rates for: \(targetCurrencies)")
-        fetchFiatRates(baseCurrency: baseCurrency) { result in
-            switch result {
-            case .success(let response):
-                print("✅ [FIAT] Got \(response.rates.count) rates")
-                let filteredRates = response.rates.filter { targetCurrencies.contains($0.key) }
-                print("📝 [FIAT] Filtered to \(filteredRates.count) currencies: \(Array(filteredRates.keys))")
-                completion(.success(filteredRates))
-            case .failure(let error):
-                print("❌ [FIAT] Error: \(error)")
-                completion(.failure(error))
-            }
-        }
-    }
-    
-    // MARK: - Crypto Currency Methods (CoinGecko API)
-    
-    func fetchCryptoRates(targetCurrencies: [String], vsCurrency: String = "usd", completion: @escaping (Result<[String: Double], Error>) -> Void) {
-        print("🔸 [CRYPTO] Fetching rates for: \(targetCurrencies)")
-        
-        // Convert currency codes to CoinGecko IDs
-        let coinIds = targetCurrencies.compactMap { cryptoCodeToCoinGeckoId($0) }
-        print("🔸 [CRYPTO] Mapped to CoinGecko IDs: \(coinIds)")
-        
-        let idsString = coinIds.joined(separator: ",")
-        let urlString = "\(cryptoBaseURL)/simple/price?ids=\(idsString)&vs_currencies=\(vsCurrency)"
-        print("🌐 [CRYPTO API] Requesting: \(urlString)")
-        
-        performRequest(urlString: urlString) { (result: Result<CryptoExchangeResponse, Error>) in
-            switch result {
-            case .success(let response):
-                print("✅ [CRYPTO] Got response for \(response.count) coins")
-                
-                // Convert back from CoinGecko format to our format
-                var rates: [String: Double] = [:]
-                
-                for (coinId, priceData) in response {
-                    if let cryptoCode = self.coinGeckoIdToCryptoCode(coinId),
-                       let price = priceData[vsCurrency] {
-                        rates[cryptoCode] = price
-                        print("💰 [CRYPTO] \(cryptoCode): $\(price)")
-                    }
-                }
-                
-                print("📝 [CRYPTO] Final rates: \(rates.keys)")
-                completion(.success(rates))
-            case .failure(let error):
-                print("❌ [CRYPTO] Error: \(error)")
-                completion(.failure(error))
-            }
-        }
-    }
-    
-    // MARK: - Combined Method for CurrencyService
-    
-    func fetchRatesForCurrencies(_ currencies: [Currency], baseCurrency: String = "USD", completion: @escaping (Result<[String: Double], Error>) -> Void) {
+    /// Fetches exchange rates for both fiat and crypto currencies
+    /// - Parameters:
+    ///   - currencies: Array of currencies to fetch rates for
+    ///   - baseCurrency: Base currency for conversion (default: USD)
+    ///   - completion: Completion handler with result containing currency rates
+    func fetchRatesForCurrencies(
+        _ currencies: [Currency],
+        baseCurrency: String = "USD",
+        completion: @escaping (Result<[String: Double], Error>) -> Void
+    ) {
         let fiatCurrencies = currencies.filter { $0.type == .fiat }.map { $0.code }
         let cryptoCurrencies = currencies.filter { $0.type == .crypto }.map { $0.code }
-        
-        print("🚀 [COMBINED] Starting fetch for \(fiatCurrencies.count) fiat + \(cryptoCurrencies.count) crypto")
         
         let group = DispatchGroup()
         var combinedRates: [String: Double] = [:]
         var errors: [Error] = []
         
-        // Always add base currency rate (1.0 for USD)
+        // Always include base currency rate
         if fiatCurrencies.contains(baseCurrency) || cryptoCurrencies.contains(baseCurrency) {
             combinedRates[baseCurrency] = 1.0
         }
@@ -98,10 +47,8 @@ class APIService {
                 switch result {
                 case .success(let rates):
                     combinedRates.merge(rates) { _, new in new }
-                    print("✅ [COMBINED] Added fiat rates: \(rates.count)")
                 case .failure(let error):
                     errors.append(error)
-                    print("❌ [COMBINED] Fiat error: \(error)")
                 }
             }
         }
@@ -114,17 +61,13 @@ class APIService {
                 switch result {
                 case .success(let rates):
                     combinedRates.merge(rates) { _, new in new }
-                    print("✅ [COMBINED] Added crypto rates: \(rates.count)")
                 case .failure(let error):
                     errors.append(error)
-                    print("❌ [COMBINED] Crypto error: \(error)")
                 }
             }
         }
         
         group.notify(queue: .main) {
-            print("🏁 [COMBINED] Finished! Total rates: \(combinedRates.count), Errors: \(errors.count)")
-            
             if !errors.isEmpty && combinedRates.isEmpty {
                 completion(.failure(errors.first!))
             } else {
@@ -133,11 +76,94 @@ class APIService {
         }
     }
     
-    // MARK: - Helper Methods
+    // MARK: - Fiat Currency Methods
     
-    private func performRequest<T: Codable>(urlString: String, completion: @escaping (Result<T, Error>) -> Void) {
+    /// Fetches fiat currency rates from ExchangeRate API
+    /// - Parameters:
+    ///   - baseCurrency: Base currency code (e.g., "USD")
+    ///   - completion: Completion handler with exchange rates
+    private func fetchFiatRates(
+        baseCurrency: String = "USD",
+        completion: @escaping (Result<FiatExchangeResponse, Error>) -> Void
+    ) {
+        let urlString = "\(fiatBaseURL)/latest/\(baseCurrency)"
+        performRequest(urlString: urlString, completion: completion)
+    }
+    
+    /// Fetches rates for specific fiat currencies
+    /// - Parameters:
+    ///   - baseCurrency: Base currency code
+    ///   - targetCurrencies: Array of target currency codes
+    ///   - completion: Completion handler with filtered rates
+    private func fetchMultipleFiatRates(
+        from baseCurrency: String,
+        to targetCurrencies: [String],
+        completion: @escaping (Result<[String: Double], Error>) -> Void
+    ) {
+        fetchFiatRates(baseCurrency: baseCurrency) { result in
+            switch result {
+            case .success(let response):
+                let filteredRates = response.rates.filter { targetCurrencies.contains($0.key) }
+                completion(.success(filteredRates))
+            case .failure(let error):
+                completion(.failure(error))
+            }
+        }
+    }
+    
+    // MARK: - Crypto Currency Methods
+    
+    /// Fetches cryptocurrency rates from CoinGecko API
+    /// - Parameters:
+    ///   - targetCurrencies: Array of crypto currency codes (e.g., ["BTC", "ETH"])
+    ///   - vsCurrency: Fiat currency to compare against (default: "usd")
+    ///   - completion: Completion handler with crypto rates
+    private func fetchCryptoRates(
+        targetCurrencies: [String],
+        vsCurrency: String = "usd",
+        completion: @escaping (Result<[String: Double], Error>) -> Void
+    ) {
+        // Convert currency codes to CoinGecko IDs
+        let coinIds = targetCurrencies.compactMap { cryptoCodeToCoinGeckoId($0) }
+        
+        guard !coinIds.isEmpty else {
+            completion(.success([:]))
+            return
+        }
+        
+        let idsString = coinIds.joined(separator: ",")
+        let urlString = "\(cryptoBaseURL)/simple/price?ids=\(idsString)&vs_currencies=\(vsCurrency)"
+        
+        performRequest(urlString: urlString) { (result: Result<CryptoExchangeResponse, Error>) in
+            switch result {
+            case .success(let response):
+                var rates: [String: Double] = [:]
+                
+                for (coinId, priceData) in response {
+                    if let cryptoCode = self.coinGeckoIdToCryptoCode(coinId),
+                       let price = priceData[vsCurrency] {
+                        rates[cryptoCode] = price
+                    }
+                }
+                
+                completion(.success(rates))
+            case .failure(let error):
+                completion(.failure(error))
+            }
+        }
+    }
+    
+    // MARK: - Network Layer
+    
+    /// Performs a generic network request and decodes the response
+    /// - Parameters:
+    ///   - urlString: URL string for the request
+    ///   - completion: Completion handler with decoded response
+    private func performRequest<T: Codable>(
+        urlString: String,
+        completion: @escaping (Result<T, Error>) -> Void
+    ) {
         guard let url = URL(string: urlString) else {
-            print("❌ Invalid URL: \(urlString)")
             completion(.failure(URLError(.badURL)))
             return
         }
@@ -147,54 +173,42 @@ class APIService {
         
         URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
-                print("❌ Network error: \(error)")
                 completion(.failure(error))
                 return
             }
             
             if let httpResponse = response as? HTTPURLResponse {
-                print("📡 HTTP Status: \(httpResponse.statusCode)")
-                if httpResponse.statusCode != 200 {
-                    let error = NSError(domain: "APIService", code: httpResponse.statusCode,
-                                      userInfo: [NSLocalizedDescriptionKey: "HTTP \(httpResponse.statusCode)"])
+                guard httpResponse.statusCode == 200 else {
+                    let error = NSError(
+                        domain: "APIService",
+                        code: httpResponse.statusCode,
+                        userInfo: [NSLocalizedDescriptionKey: "HTTP \(httpResponse.statusCode)"]
+                    )
                     completion(.failure(error))
                     return
                 }
             }
             
             guard let data = data else {
-                print("❌ No data received")
                 completion(.failure(URLError(.badServerResponse)))
                 return
-            }
-            
-            print("📊 Data size: \(data.count) bytes")
-            
-            // Debug response for first few requests
-            if Constants.Debug.enableAPILogging {
-                if let jsonString = String(data: data, encoding: .utf8) {
-                    let preview = jsonString.count > 200 ? String(jsonString.prefix(200)) + "..." : jsonString
-                    print("📄 Response preview: \(preview)")
-                }
             }
             
             do {
                 let decoder = JSONDecoder()
                 let response = try decoder.decode(T.self, from: data)
-                print("✅ Successfully decoded response")
                 completion(.success(response))
             } catch {
-                print("❌ Decoding error: \(error)")
-                if let jsonString = String(data: data, encoding: .utf8) {
-                    print("🔍 Raw response: \(jsonString)")
-                }
                 completion(.failure(error))
             }
         }.resume()
     }
     
-    // MARK: - Crypto Currency Mapping
+    // MARK: - Currency Code Mapping
     
+    /// Converts currency code to CoinGecko API ID
+    /// - Parameter code: Currency code (e.g., "BTC")
+    /// - Returns: CoinGecko ID (e.g., "bitcoin") or nil if not found
     private func cryptoCodeToCoinGeckoId(_ code: String) -> String? {
         let mapping: [String: String] = [
             "AAVE": "aave",
@@ -265,6 +279,9 @@ class APIService {
         return mapping[code]
     }
     
+    /// Converts CoinGecko API ID back to currency code
+    /// - Parameter id: CoinGecko ID (e.g., "bitcoin")
+    /// - Returns: Currency code (e.g., "BTC") or nil if not found
     private func coinGeckoIdToCryptoCode(_ id: String) -> String? {
         let mapping: [String: String] = [
             "aave": "AAVE",
@@ -338,11 +355,13 @@ class APIService {
 
 // MARK: - Response Models
 
+/// Response model for fiat currency exchange rates
 struct FiatExchangeResponse: Codable {
     let base: String
     let date: String
     let rates: [String: Double]
 }
 
-// CoinGecko returns nested structure like {"bitcoin": {"usd": 45000}}
+/// Response model for cryptocurrency exchange rates
+/// Format: {"bitcoin": {"usd": 45000}}
 typealias CryptoExchangeResponse = [String: [String: Double]]

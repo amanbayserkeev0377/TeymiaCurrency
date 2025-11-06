@@ -1,45 +1,64 @@
 import SwiftUI
 import Foundation
 
+/// Main ViewModel managing currency data, exchange rates, and conversion logic
 @MainActor
 class CurrencyStore: ObservableObject {
+    
+    // MARK: - Published Properties
+    
+    /// List of currencies selected by the user
     @Published var selectedCurrencies: [Currency] = [] {
         didSet {
             saveCurrencies()
         }
     }
+    
+    /// Current exchange rates for all currencies (key: currency code, value: rate to USD)
     @Published var exchangeRates: [String: Double] = [:]
+    
+    /// Indicates whether exchange rates are currently being fetched
     @Published var isLoading = false
+    
+    /// Error message to display to the user
     @Published var errorMessage: String?
+    
+    /// Timestamp of the last successful rates update
     @Published var lastUpdateTime: Date?
     
+    /// Base amount in USD for conversion calculations
     @Published var baseAmount: Double = 1.0
+    
+    /// Currency code currently being edited by the user
     @Published var editingCurrency: String = "USD"
+    
+    /// Flag indicating if this is the first app launch (no cached rates)
     @Published var isFirstLaunch: Bool = false
     
-    @Published var focusedCurrencyCode: String? = nil
+    // MARK: - Dependencies
     
     private let currencyService = CurrencyService.shared
     private let userDefaults = UserDefaults.standard
+    
+    // MARK: - Initialization
     
     init() {
         loadSelectedCurrencies()
         loadCachedRates()
         
-        // Check if this is first launch
+        // Check if this is first launch (no cached rates available)
         isFirstLaunch = exchangeRates.isEmpty
-        
-        print("🔍 [DEBUG] Loaded \(selectedCurrencies.count) currencies: \(selectedCurrencies.map { $0.code })")
-        print("🔍 [DEBUG] Loaded \(exchangeRates.count) cached rates")
-        print("🔍 [DEBUG] Is first launch: \(isFirstLaunch)")
     }
     
     // MARK: - Currency Management
     
+    /// Loads selected currencies from persistent storage
     func loadSelectedCurrencies() {
         selectedCurrencies = currencyService.loadSelectedCurrencies()
     }
     
+    /// Adds a new currency to the selected list
+    /// - Parameter currency: Currency to add
     func addCurrency(_ currency: Currency) {
         guard !selectedCurrencies.contains(where: { $0.code == currency.code }) else { return }
         guard selectedCurrencies.count < Constants.App.maxCurrencies else {
@@ -52,45 +71,50 @@ class CurrencyStore: ObservableObject {
         fetchRatesIfNeeded()
     }
     
+    /// Removes a currency from the selected list
+    /// - Parameter currency: Currency to remove
     func removeCurrency(_ currency: Currency) {
         selectedCurrencies.removeAll { $0.code == currency.code }
         saveCurrencies()
     }
     
+    /// Indicates whether more currencies can be removed (minimum 1 required)
     var canRemoveMore: Bool {
         return selectedCurrencies.count > 1
     }
     
+    /// Reorders currencies in the list
+    /// - Parameters:
+    ///   - source: Source index set
+    ///   - destination: Destination index
     func moveCurrency(from source: IndexSet, to destination: Int) {
         selectedCurrencies.move(fromOffsets: source, toOffset: destination)
         saveCurrencies()
     }
     
+    /// Persists selected currencies to UserDefaults
     private func saveCurrencies() {
         currencyService.saveSelectedCurrencies(selectedCurrencies)
     }
     
     // MARK: - Exchange Rates
     
+    /// Fetches latest exchange rates from API
     func fetchRates() {
-        print("🚀 [DEBUG] fetchRates() called")
         isLoading = true
         errorMessage = nil
         
         Task {
             do {
                 let rates = try await fetchRatesAsync()
-                print("✅ [DEBUG] Got \(rates.count) rates in fetchRates")
                 await MainActor.run {
                     self.exchangeRates = rates
                     self.lastUpdateTime = Date()
                     self.saveRates(rates)
                     self.isLoading = false
                     self.isFirstLaunch = false
-                    print("✅ [DEBUG] UI updated with rates")
                 }
             } catch {
-                print("❌ [DEBUG] Error in fetchRates: \(error)")
                 await MainActor.run {
                     self.errorMessage = error.localizedDescription
                     self.isLoading = false
@@ -100,26 +124,25 @@ class CurrencyStore: ObservableObject {
         }
     }
     
+    /// Fetches rates only if needed (based on cache age or missing currencies)
     func fetchRatesIfNeeded() {
-        print("🔍 [DEBUG] fetchRatesIfNeeded called")
-        
         let missingRates = selectedCurrencies.filter { currency in
             !exchangeRates.keys.contains(currency.code)
         }
         
         if exchangeRates.isEmpty || shouldRefreshRates() || !missingRates.isEmpty {
-            print("🔍 [DEBUG] Starting fetchRates...")
             fetchRates()
-        } else {
-            print("🔍 [DEBUG] Skipping fetch - all rates are fresh")
         }
     }
     
+    /// Checks if rates should be refreshed based on last update time
+    /// - Returns: True if rates are older than 6 hours
     private func shouldRefreshRates() -> Bool {
         guard let lastUpdate = lastUpdateTime else { return true }
-        return Date().timeIntervalSince(lastUpdate) > 21600 // 6 hr
+        return Date().timeIntervalSince(lastUpdate) > 21600 // 6 hours
     }
     
+    /// Async wrapper for fetchLatestRates callback
     private func fetchRatesAsync() async throws -> [String: Double] {
         return try await withCheckedThrowingContinuation { continuation in
             currencyService.fetchLatestRates { result in
@@ -129,8 +152,12 @@ class CurrencyStore: ObservableObject {
     }
     
     // MARK: - Conversion Logic
+    
+    /// Updates the base amount based on user input in a specific currency
+    /// - Parameters:
+    ///   - amount: Amount entered by user
+    ///   - currencyCode: Currency code being edited
     func updateAmount(_ amount: Double, for currencyCode: String) {
-        print("🔍 [DEBUG] updateAmount: \(amount) for \(currencyCode)")
         editingCurrency = currencyCode
         
         if currencyCode == "USD" {
@@ -140,14 +167,18 @@ class CurrencyStore: ObservableObject {
             let currency = selectedCurrencies.first { $0.code == currencyCode }
             
             if currency?.type == .crypto {
+                // For crypto: multiply by rate (crypto is priced in USD)
                 baseAmount = amount * rate
             } else {
+                // For fiat: divide by rate (rate is USD per currency)
                 baseAmount = amount / rate
             }
         }
-        print("🔍 [DEBUG] New baseAmount: \(baseAmount)")
     }
-
+    
+    /// Calculates the display amount for a given currency
+    /// - Parameter currencyCode: Currency code to calculate amount for
+    /// - Returns: Converted amount in the specified currency
     func getDisplayAmount(for currencyCode: String) -> Double {
         if currencyCode == "USD" {
             return baseAmount
@@ -156,24 +187,32 @@ class CurrencyStore: ObservableObject {
             let currency = selectedCurrencies.first { $0.code == currencyCode }
             
             if currency?.type == .crypto {
+                // For crypto: divide by rate
                 return baseAmount / rate
             } else {
+                // For fiat: multiply by rate
                 return baseAmount * rate
             }
         }
     }
     
+    /// Retrieves the exchange rate for a currency
+    /// - Parameter currencyCode: Currency code
+    /// - Returns: Exchange rate or 1.0 if not found
     func getExchangeRate(for currencyCode: String) -> Double {
         return exchangeRates[currencyCode] ?? 1.0
     }
     
     // MARK: - Data Persistence
     
+    /// Saves exchange rates to UserDefaults
+    /// - Parameter rates: Dictionary of exchange rates to save
     private func saveRates(_ rates: [String: Double]) {
         userDefaults.setCodable(rates, forKey: Constants.UserDefaultsKeys.lastRates)
         userDefaults.set(Date(), forKey: Constants.UserDefaultsKeys.lastUpdateTime)
     }
     
+    /// Loads cached exchange rates from UserDefaults
     private func loadCachedRates() {
         if let rates = userDefaults.getCodable([String: Double].self, forKey: Constants.UserDefaultsKeys.lastRates) {
             exchangeRates = rates
@@ -186,11 +225,13 @@ class CurrencyStore: ObservableObject {
     
     // MARK: - Computed Properties
     
+    /// Indicates if rates need updating (older than 1 hour)
     var needsUpdate: Bool {
         guard let lastUpdate = lastUpdateTime else { return true }
         return lastUpdate.isOlderThan(minutes: 60)
     }
     
+    /// Returns a human-readable string of last update time
     var lastUpdateString: String {
         guard let lastUpdate = lastUpdateTime else { return "Never" }
         let formatter = RelativeDateTimeFormatter()
