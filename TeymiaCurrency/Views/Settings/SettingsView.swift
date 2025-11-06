@@ -68,12 +68,28 @@ struct SettingsView: View {
                     Button {
                         if let url = URL(string: "https://www.notion.so/Terms-of-Service-267d5178e65a804a9e80d8660c798b57") {
                             UIApplication.shared.open(url)
-                        } // <- CHANGE TO REAL URL
+                        }
                     } label: {
                         Label(
                             title: { Text("terms_of_service".localized) },
                             icon: {
                                 Image("icon_document")
+                                    .resizable()
+                                    .frame(width: 24, height: 24)
+                            }
+                        )
+                    }
+                    
+                    // GitHub
+                    Button {
+                        if let url = URL(string: "https://github.com/amanbayserkeev0377/TeymiaCurrency") {
+                            UIApplication.shared.open(url)
+                        }
+                    } label: {
+                        Label(
+                            title: { Text("GitHub") },
+                            icon: {
+                                Image("github")
                                     .resizable()
                                     .frame(width: 24, height: 24)
                             }

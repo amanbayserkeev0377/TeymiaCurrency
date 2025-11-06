@@ -23,8 +23,9 @@ struct MainView: View {
                             Button(role: .destructive) {
                                 currencyStore.removeCurrency(currency)
                             } label: {
-                                Image(systemName: "trash")
+                                Image("icon_trash")
                             }
+                            .tint(.red)
                         }
                     }
                 }

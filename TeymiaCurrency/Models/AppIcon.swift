@@ -2,11 +2,13 @@ import Foundation
 
 enum AppIcon: String, CaseIterable, Identifiable {
     case main = "AppIcon"
-    case blue = "AppIcon-Blue"
     case globe = "AppIcon-Globe"
     case gold = "AppIcon-Gold"
-    case purple = "AppIcon-Purple"
     case white = "AppIcon-White"
+    case greenDollar = "AppIcon-GreenDollar"
+    case cash = "AppIcon-Cash"
+    case blue = "AppIcon-Blue"
+    case purple = "AppIcon-Purple"
     case yuan = "AppIcon-Yuan"
     
     var id: String { rawValue }
