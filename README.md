@@ -3,7 +3,7 @@
 A minimalist currency converter for iOS featuring real-time exchange rates for 160+ fiat currencies and 70+ cryptocurrencies.
 
 <p align="center">
-  <img src="https://img.shields.io/badge/iOS-16.0+-blue.svg" alt="iOS 16.0+"/>
+  <img src="https://img.shields.io/badge/iOS-16.1+-blue.svg" alt="iOS 16.0+"/>
   <img src="https://img.shields.io/badge/Swift-5.9-orange.svg" alt="Swift 5.9"/>
   <img src="https://img.shields.io/badge/SwiftUI-✓-green.svg" alt="SwiftUI"/>
   <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License MIT"/>
@@ -23,15 +23,30 @@ A minimalist currency converter for iOS featuring real-time exchange rates for 1
 
 ## 📱 Screenshots
 
-/Users/amanbayserkeev/Documents/TeymiaCurrency/AppStoreScreenshots/AppStore/1.png
-*Add your app screenshots here*
+<div align="center">
+  <img src="Screenshots/screenshot1.png" width="200"/>
+  <img src="Screenshots/screenshot2.png" width="200"/>
+  <img src="Screenshots/screenshot3.png" width="200"/>
+</div>
+
+<div align="center">
+  <img src="Screenshots/screenshot4.png" width="200"/>
+  <img src="Screenshots/screenshot5.png" width="200"/>
+  <img src="Screenshots/screenshot6.png" width="200"/>
+</div>
+
+<p align="center">
+  <a href="https://apps.apple.com/app/id6752235997">
+    <img src="https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/en-us?size=250x83" alt="Download on App Store" height="60">
+  </a>
+</p>
 
 ## 🛠 Tech Stack
 
 ### Architecture
 - **Pattern**: MVVM (Model-View-ViewModel)
 - **UI Framework**: SwiftUI
-- **Minimum iOS**: 16.0+
+- **Minimum iOS**: 16.1+
 - **Language**: Swift 5.9
 
 ### APIs
@@ -77,7 +92,7 @@ TeymiaCurrency/
 ### Prerequisites
 
 - Xcode 15.0 or later
-- iOS 16.0+ device or simulator
+- iOS 16.1+ device or simulator
 - macOS 13.0+ (for development)
 
 ### Installation
@@ -146,18 +161,6 @@ private func cryptoCodeToCoinGeckoId(_ code: String) -> String? {
 }
 ```
 
-### Adding New App Icons
-
-1. Add icon assets to `Assets.xcassets`
-2. Update `AppIcon.swift`:
-```swift
-enum AppIcon: String, CaseIterable {
-    case main = "AppIcon"
-    case newIcon = "AppIcon-NewIcon"
-    // ...
-}
-```
-
 ## 🧪 Testing
 
 The app includes manual testing scenarios. To test:
@@ -195,13 +198,13 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [CoinGecko](https://coingecko.com) for cryptocurrency data
 - Currency flags from various open-source collections
 
-## 📧 Contact
+## 🚀 Download
 
-Aman Bayserkeev - [@amanbayserkeev0377](https://github.com/amanbayserkeev0377)
-
-Project Link: [https://github.com/amanbayserkeev0377/TeymiaCurrency](https://github.com/amanbayserkeev0377/TeymiaCurrency)
-
-App Store: [Download on the App Store](https://apps.apple.com/app/id6752235997)
+<p align="center">
+  <a href="https://apps.apple.com/app/id6752235997">
+    <img src="https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/en-us?size=250x83" alt="Download on App Store" height="60">
+  </a>
+</p>
 
 ---
 
