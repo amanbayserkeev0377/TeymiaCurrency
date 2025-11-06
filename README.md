@@ -9,6 +9,26 @@ A minimalist currency converter for iOS featuring real-time exchange rates for 1
   <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License MIT"/>
 </p>
 
+## 📱 Screenshots
+
+<div align="center">
+  <img src="Screenshots/1.png" width="200"/>
+  <img src="Screenshots/2.png" width="200"/>
+  <img src="Screenshots/3.png" width="200"/>
+</div>
+
+<div align="center">
+  <img src="Screenshots/4.png" width="200"/>
+  <img src="Screenshots/5.png" width="200"/>
+  <img src="Screenshots/6.png" width="200"/>
+</div>
+
+<p align="center">
+  <a href="https://apps.apple.com/app/id6752235997">
+    <img src="https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/en-us?size=250x83" alt="Download on App Store" height="60">
+  </a>
+</p>
+
 ## ✨ Features
 
 - 🌍 **160+ Fiat Currencies** - Support for all major world currencies
@@ -20,26 +40,6 @@ A minimalist currency converter for iOS featuring real-time exchange rates for 1
 - 🎯 **Real-time Conversion** - Live updates as you type
 - 🌐 **Localized** - Support for multiple languages
 - ⚡ **Fast & Lightweight** - Minimal dependencies, pure SwiftUI
-
-## 📱 Screenshots
-
-<div align="center">
-  <img src="Screenshots/screenshot1.png" width="200"/>
-  <img src="Screenshots/screenshot2.png" width="200"/>
-  <img src="Screenshots/screenshot3.png" width="200"/>
-</div>
-
-<div align="center">
-  <img src="Screenshots/screenshot4.png" width="200"/>
-  <img src="Screenshots/screenshot5.png" width="200"/>
-  <img src="Screenshots/screenshot6.png" width="200"/>
-</div>
-
-<p align="center">
-  <a href="https://apps.apple.com/app/id6752235997">
-    <img src="https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/en-us?size=250x83" alt="Download on App Store" height="60">
-  </a>
-</p>
 
 ## 🛠 Tech Stack
 
