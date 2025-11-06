@@ -117,7 +117,7 @@ class CurrencyStore: ObservableObject {
     
     private func shouldRefreshRates() -> Bool {
         guard let lastUpdate = lastUpdateTime else { return true }
-        return Date().timeIntervalSince(lastUpdate) > 21600
+        return Date().timeIntervalSince(lastUpdate) > 21600 // 6 hr
     }
     
     private func fetchRatesAsync() async throws -> [String: Double] {

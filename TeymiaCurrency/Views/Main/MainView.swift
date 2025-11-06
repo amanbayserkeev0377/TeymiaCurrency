@@ -16,7 +16,7 @@ struct MainView: View {
                     CurrencyRowView(
                         currency: currency,
                         currencyStore: currencyStore,
-                        focusedCurrency: $focusedCurrency  // ✅ Pass binding
+                        focusedCurrency: $focusedCurrency
                     )
                     .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                         if currencyStore.canRemoveMore {
@@ -70,6 +70,7 @@ struct MainView: View {
             }
             .sheet(isPresented: $showingSettings) {
                 SettingsView()
+                    .environment(\.colorScheme, themeMode.colorScheme ?? colorScheme)
                     .preferredColorScheme(themeMode.colorScheme)
             }
             .alert("Error", isPresented: .constant(currencyStore.errorMessage != nil)) {

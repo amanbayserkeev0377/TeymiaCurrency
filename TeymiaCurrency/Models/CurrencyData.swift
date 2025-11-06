@@ -171,7 +171,6 @@ struct CurrencyData {
         Currency(code: "XPF", name: "currency_cfp_franc".localized, type: .fiat),
         Currency(code: "YER", name: "currency_yemeni_rial".localized, type: .fiat),
         Currency(code: "ZAR", name: "currency_south_african_rand".localized, type: .fiat),
-        Currency(code: "ZMK", name: "currency_zambian_kwacha_old".localized, type: .fiat),
         Currency(code: "ZMW", name: "currency_zambian_kwacha".localized, type: .fiat),
         Currency(code: "ZWL", name: "currency_zimbabwean_dollar".localized, type: .fiat)
     ]

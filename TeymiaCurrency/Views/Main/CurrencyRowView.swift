@@ -125,32 +125,67 @@ struct CurrencyRowView: View {
     }
     
     private func handleTextInput(_ newValue: String) {
+        // Remove all spaces first to get clean input
         let withoutSpaces = newValue.replacingOccurrences(of: " ", with: "")
-        let filtered = withoutSpaces.filter { $0.isNumber || $0 == "," }
         
-        let commaCount = filtered.filter { $0 == "," }.count
-        if commaCount > 1 { return }
+        // Allow numbers, comma, and dot
+        let filtered = withoutSpaces.filter { $0.isNumber || $0 == "," || $0 == "." }
         
-        if filtered == "," {
+        // Convert dot to comma (for different locales)
+        let normalized = filtered.replacingOccurrences(of: ".", with: ",")
+        
+        // Prevent multiple commas
+        let commaCount = normalized.filter { $0 == "," }.count
+        if commaCount > 1 {
+            return
+        }
+        
+        // Auto-fix leading comma
+        if normalized == "," {
             inputText = "0,"
             return
         }
         
-        let forParsing = filtered.replacingOccurrences(of: ",", with: ".")
-        guard let amount = Double(forParsing) else {
-            if !filtered.isEmpty {
-                inputText = filtered
+        // Handle empty input
+        if normalized.isEmpty {
+            inputText = ""
+            return
+        }
+        
+        // Parse the number (replace comma with dot for Double parsing)
+        let forParsing = normalized.replacingOccurrences(of: ",", with: ".")
+        
+        // Check if user is typing decimal part (has comma but no significant decimal yet)
+        let hasComma = normalized.contains(",")
+        let parts = normalized.split(separator: ",")
+        let isTypingDecimals = hasComma && (parts.count < 2 || parts[1].isEmpty || parts[1].allSatisfy { $0 == "0" })
+        
+        // If typing decimals like "0," or "0,0" or "0,00", keep as-is
+        if isTypingDecimals {
+            inputText = normalized
+            
+            // Still update the amount for conversion
+            if let amount = Double(forParsing), amount >= 0, isThisFieldFocused {
+                currencyStore.updateAmount(amount, for: currency.code)
             }
             return
         }
         
-        let formattedText = formatInputValue(amount, hasDecimal: filtered.contains(","))
+        guard let amount = Double(forParsing) else {
+            // Allow partial input
+            inputText = normalized
+            return
+        }
         
+        // Only format if there's a meaningful decimal value
+        let formattedText = formatInputValue(amount, hasDecimal: hasComma)
+        
+        // Update the display
         if inputText != formattedText {
             inputText = formattedText
         }
         
-        // ✅ Simple check
+        // Update amount in real-time
         if isThisFieldFocused && amount >= 0 {
             currencyStore.updateAmount(amount, for: currency.code)
         }
@@ -163,7 +198,7 @@ struct CurrencyRowView: View {
         formatter.decimalSeparator = ","
         
         if hasDecimal {
-            formatter.maximumFractionDigits = 6
+            formatter.maximumFractionDigits = 8
             formatter.minimumFractionDigits = 0
         } else {
             formatter.maximumFractionDigits = 0
@@ -203,7 +238,7 @@ struct CurrencyRowView: View {
             } else if amount >= 0.01 {
                 formatter.maximumFractionDigits = 4
             } else {
-                formatter.maximumFractionDigits = 6
+                formatter.maximumFractionDigits = 8
             }
         } else {
             if amount >= 1000000 {
@@ -215,7 +250,7 @@ struct CurrencyRowView: View {
             } else if amount >= 0.01 {
                 formatter.maximumFractionDigits = 4
             } else {
-                formatter.maximumFractionDigits = 6
+                formatter.maximumFractionDigits = 8
             }
         }
         
